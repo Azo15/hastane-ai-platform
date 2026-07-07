@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}No-Show Analizi — Hastane AI Platformu{% endblock %}
+{% block page_title %}No-Show Analizi{% endblock %}
+{% block breadcrumb %}Hastane AI Platformu / No-Show Analizi{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <div>
+    <h1 class="page-header-title">
+      <i class="bi bi-calendar-x-fill me-2" style="color:#ef4444;"></i>
+      Randevu Kaçırma <span class="text-gradient">Risk Analizi</span>
+    </h1>
+    <p class="page-header-subtitle">
+      LightGBM modeli ile hastalara göre randevu kaçırma olasılığı tahmin edin.
+    </p>
+  </div>
+  <div>
+    <span class="badge rounded-pill fw-semibold px-3 py-2" 
+          style="background:#dcfce7; color:#15803d; font-size:12px;">
+      <i class="bi bi-cpu me-1"></i> Model Aktif
+    </span>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- ──────────────────────────────────────────────────────────────
+       SOL: TAHMİN FORMU
+  ────────────────────────────────────────────────────────────────── -->
+  <div class="col-xl-4 col-lg-5 animate-in">
+    <div class="card-modern">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-search" style="color:var(--primary);"></i>
+          Yeni Tahmin Yap
+        </span>
+      </div>
+      <div class="card-body-modern">
+        <form method="POST" action="{{ url_for('no_show.predict') }}" id="predict-form">
+
+          <!-- Yaş -->
+          <div class="mb-3">
+            <label class="form-label-modern" for="age">
+              <i class="bi bi-person"></i> Hasta Yaşı
+            </label>
+            <input type="number" id="age" name="age" class="form-control-modern"
+                   min="0" max="120" value="{{ form_data.age if form_data else 35 }}"
+                   placeholder="Örn: 35" required />
+          </div>
+
+          <!-- Bekleme Süresi -->
+          <div class="mb-3">
+            <label class="form-label-modern" for="days_waiting">
+              <i class="bi bi-hourglass-split"></i> Bekleme Süresi (Gün)
+            </label>
+            <input type="number" id="days_waiting" name="days_waiting" class="form-control-modern"
+                   min="0" max="365" value="{{ form_data.days_waiting if form_data else 0 }}"
+                   placeholder="Randevu bekletme süresi" required />
+          </div>
+
+          <!-- Önceki Kaçırma Sayısı -->
+          <div class="mb-3">
+            <label class="form-label-modern" for="previous_noshow">
+              <i class="bi bi-x-circle"></i> Önceki Kaçırma Sayısı
+            </label>
+            <input type="number" id="previous_noshow" name="previous_noshow" class="form-control-modern"
+                   min="0" max="20" value="{{ form_data.previous_noshow if form_data else 0 }}"
+                   placeholder="Geçmişteki no-show sayısı" />
+          </div>
+
+          <!-- Sağlık Durumu (Checkboxlar) -->
+          <div class="mb-3">
+            <label class="form-label-modern">
+              <i class="bi bi-heart-pulse"></i> Sağlık Bilgileri
+            </label>
+            <div class="d-flex flex-wrap gap-2">
+
+              {% set checks = [
+                ('hipertension', 'Hipertansiyon', '🫀'),
+                ('diabetes',     'Diyabet',       '💉'),
+                ('alcoholism',   'Alkol',         '🍺'),
+                ('handcap',      'Engellilik',    '♿'),
+              ] %}
+
+              {% for name, label, icon in checks %}
+              <div class="form-check" style="
+                  background: #f8fafc;
+                  border: 1.5px solid var(--border);
+                  border-radius: 8px;
+                  padding: 7px 12px 7px 30px;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  font-size: 13px;
+                  color: var(--text-primary);
+              ">
+                <input class="form-check-input" type="checkbox" name="{{ name }}" 
+                       id="{{ name }}" value="1"
+                       {% if form_data and form_data.get(name) %}checked{% endif %} />
+                <label class="form-check-label fw-medium" for="{{ name }}" style="cursor:pointer;">
+                  {{ icon }} {{ label }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- SMS Bildirimi -->
+          <div class="mb-4">
+            <label class="form-label-modern" for="sms_received">
+              <i class="bi bi-phone"></i> SMS Bildirimi
+            </label>
+            <div class="form-check" style="
+                background: #f8fafc;
+                border: 1.5px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 12px 10px 34px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 13px;
+            ">
+              <input class="form-check-input" type="checkbox" name="sms_received"
+                     id="sms_received" value="1"
+                     {% if form_data and form_data.get('sms_received') %}checked{% endif %} />
+              <label class="form-check-label fw-medium" for="sms_received" style="cursor:pointer;">
+                📱 SMS Hatırlatması Gönderildi
+              </label>
+            </div>
+          </div>
+
+          <!-- Gizli scholarship alanı (varsayılan 0) -->
+          <input type="hidden" name="scholarship" value="0" />
+
+          <button type="submit" class="btn-primary-modern w-100 justify-content-center">
+            <i class="bi bi-cpu"></i> Riski Tahmin Et
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────────
+       SAĞ: SONUÇ VE HAFTALIK TABLO
+  ────────────────────────────────────────────────────────────────── -->
+  <div class="col-xl-8 col-lg-7">
+
+    <!-- Tahmin Sonucu -->
+    {% if prediction_result %}
+    <div class="prediction-result-card {{ prediction_result.risk_color }} mb-4 animate-in" 
+         id="prediction-result">
+      <div class="d-flex align-items-center gap-4 flex-wrap">
+
+        <!-- Risk Dairesi -->
+        <div class="risk-score-circle {{ prediction_result.risk_color }}">
+          <div class="risk-score-value">%{{ prediction_result.risk_score }}</div>
+          <div class="risk-score-unit">Risk</div>
+        </div>
+
+        <!-- Detaylar -->
+        <div class="flex-grow-1">
+          <h4 style="font-family:'Outfit',sans-serif; font-weight:700; margin-bottom:4px;">
+            {% if prediction_result.risk_color == 'success' %}
+              ✅ Düşük No-Show Riski
+            {% elif prediction_result.risk_color == 'warning' %}
+              ⚠️ Orta No-Show Riski
+            {% else %}
+              🔴 Yüksek No-Show Riski
+            {% endif %}
+          </h4>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+            Tahmin: Bu hastanın randevuya 
+            <strong>{% if prediction_result.prediction == 1 %}gelmeme{% else %}gelme{% endif %}</strong>
+            olasılığı yüksektir.
+            Risk Skoru: <strong>{{ prediction_result.risk_score }}%</strong>
+          </p>
+
+          <!-- Risk Bar -->
+          <div class="risk-bar-container" style="max-width:400px;">
+            <div class="risk-bar {{ prediction_result.risk_color }}"
+                 data-width="{{ prediction_result.risk_score }}"
+                 style="width: 0%;"></div>
+          </div>
+
+          <!-- Öneri -->
+          <div class="mt-3 p-3 rounded-3" style="
+              background: rgba(255,255,255,0.6);
+              border: 1px solid rgba(0,0,0,0.08);
+              font-size: 13px;
+          ">
+            {% if prediction_result.risk_color == 'success' %}
+              💡 <strong>Öneri:</strong> Standart randevu sürecine devam edilebilir. Ek müdahale gerekmemektedir.
+            {% elif prediction_result.risk_color == 'warning' %}
+              💡 <strong>Öneri:</strong> SMS hatırlatması yapılması ve randevu günü tekrar aranması önerilir.
+            {% else %}
+              💡 <strong>Öneri:</strong> Randevu günü sabahı hasta aranmalı, alternatif slot planlanmalı ve randevu hatırlatma katmanı artırılmalıdır.
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Haftalık Yüksek Riskli Randevular Tablosu -->
+    <div class="card-modern animate-in">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-exclamation-triangle-fill" style="color:#ef4444;"></i>
+          Bu Hafta Yüksek Riskli Randevular
+        </span>
+        <span class="badge rounded-pill" style="background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:600;">
+          {{ high_risk_appointments|length }} Hasta
+        </span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="high-risk-table">
+          <thead>
+            <tr>
+              <th>Randevu ID</th>
+              <th>Hasta</th>
+              <th>Yaş</th>
+              <th>Tarih / Saat</th>
+              <th>Poliklinik</th>
+              <th>Risk Skoru</th>
+              <th>Ön. Kaçırma</th>
+              <th>SMS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for apt in high_risk_appointments %}
+            <tr>
+              <td>
+                <code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px;">
+                  {{ apt.id }}
+                </code>
+              </td>
+              <td>
+                <div class="patient-name-cell">
+                  <div class="patient-avatar"
+                       style="background: hsl({{ loop.index * 47 }}, 65%, 50%);">
+                    {{ apt.hasta_adi[0] }}
+                  </div>
+                  <span class="fw-semibold" style="font-size:13px;">{{ apt.hasta_adi }}</span>
+                </div>
+              </td>
+              <td>{{ apt.yas }}</td>
+              <td>
+                <div style="font-size:13px; font-weight:600;">{{ apt.tarih }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ apt.saat }}</div>
+              </td>
+              <td>
+                <span style="font-size:12px; background:#f0f4f8; padding:3px 8px; 
+                             border-radius:6px; font-weight:500;">
+                  {{ apt.poliklinik }}
+                </span>
+              </td>
+              <td>
+                {% if apt.risk_skoru >= 80 %}
+                  <span class="risk-score-pill" style="background:#fee2e2; color:#b91c1c;">
+                    🔴 %{{ apt.risk_skoru }}
+                  </span>
+                {% elif apt.risk_skoru >= 70 %}
+                  <span class="risk-score-pill" style="background:#fff3cd; color:#92400e;">
+                    🟡 %{{ apt.risk_skoru }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="fw-bold" style="color:{% if apt.onceki_kaçirma >= 3 %}#ef4444{% else %}#f59e0b{% endif %};">
+                  {{ apt.onceki_kaçirma }}x
+                </span>
+              </td>
+              <td>
+                {% if apt.sms_gonderildi == 'Evet' %}
+                  <span style="color:#22c55e; font-size:13px;">✓ Gönderildi</span>
+                {% else %}
+                  <span style="color:#ef4444; font-size:13px;">✗ Gönderilmedi</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="padding:14px 24px; border-top:1px solid var(--border); 
+                  font-size:12px; color:var(--text-muted);">
+        <i class="bi bi-info-circle me-1"></i>
+        Bu liste simülasyon verilerini içermektedir. Üretimde veritabanından gerçek hasta verileri çekilecektir.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Risk bar animasyonunu tetikle
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".risk-bar[data-width]").forEach(function (bar) {
+      const width = bar.getAttribute("data-width");
+      setTimeout(function () { bar.style.width = width + "%"; }, 300);
+    });
+  });
+</script>
+{% endblock %}

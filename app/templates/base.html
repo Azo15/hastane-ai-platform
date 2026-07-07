@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Hastane Kurumsal Yapay Zeka Platformu — No-Show Tahmin ve IT Destek Yönetim Sistemi" />
+  <title>{% block title %}Hastane AI Platformu{% endblock %}</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <!-- Özelleştirilmiş Stil -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       YAN MENÜ (SIDEBAR)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Logo -->
+    <a class="sidebar-logo" href="{{ url_for('main.index') }}">
+      <div class="sidebar-logo-icon">🏥</div>
+      <div class="sidebar-logo-text">
+        <span class="sidebar-logo-title">Hastane AI</span>
+        <span class="sidebar-logo-subtitle">Kurumsal Platform</span>
+      </div>
+    </a>
+
+    <!-- Navigasyon -->
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Ana Modüller</div>
+
+      <a href="{{ url_for('main.index') }}"
+         class="nav-item-link {% if request.endpoint == 'main.index' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="bi bi-grid-1x2-fill"></i></span>
+        <span>Ana Sayfa</span>
+      </a>
+
+      <a href="{{ url_for('no_show.dashboard') }}"
+         class="nav-item-link {% if request.blueprint == 'no_show' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="bi bi-calendar-x-fill"></i></span>
+        <span>No-Show Analizi</span>
+      </a>
+
+      <a href="{{ url_for('chatbot.index') }}"
+         class="nav-item-link {% if request.blueprint == 'chatbot' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="bi bi-headset"></i></span>
+        <span>IT Destek &amp; Chatbot</span>
+      </a>
+
+      <div class="nav-section-label" style="margin-top: 16px;">Sistem</div>
+
+      <a href="#" class="nav-item-link" title="Ayarlar (Yapım Aşamasında)">
+        <span class="nav-item-icon"><i class="bi bi-gear-fill"></i></span>
+        <span>Ayarlar</span>
+      </a>
+
+      <a href="#" class="nav-item-link" title="Raporlar (Yapım Aşamasında)">
+        <span class="nav-item-icon"><i class="bi bi-bar-chart-fill"></i></span>
+        <span>Raporlar</span>
+      </a>
+    </nav>
+
+    <!-- Kullanıcı Bilgisi -->
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-info">
+        <div class="avatar">BT</div>
+        <div class="user-info">
+          <div class="user-name">Bilgi İşlem</div>
+          <div class="user-role">Sistem Yöneticisi</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ÜST BAR (TOPBAR)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">{% block page_title %}Kontrol Paneli{% endblock %}</span>
+      <span class="topbar-breadcrumb">{% block breadcrumb %}Hastane AI Platformu / Ana Sayfa{% endblock %}</span>
+    </div>
+    <div class="topbar-right">
+      <!-- Canlı saat -->
+      <div class="topbar-time" title="Güncel Saat">
+        <i class="bi bi-clock me-1"></i>
+        <span id="current-time">--:--:--</span>
+      </div>
+      <!-- Bildirim ikonu -->
+      <div class="topbar-badge" title="Bildirimler">
+        <i class="bi bi-bell-fill"></i>
+        <span class="badge-dot"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ANA İÇERİK
+  ═══════════════════════════════════════════════════════════════════ -->
+  <main class="main-content" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Toast Kapsayıcı -->
+  <div class="toast-container-custom" id="toast-container"></div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Ana JS -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

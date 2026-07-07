@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}IT Destek & Chatbot — Hastane AI Platformu{% endblock %}
+{% block page_title %}IT Destek & Chatbot{% endblock %}
+{% block breadcrumb %}Hastane AI Platformu / IT Destek & Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <div>
+    <h1 class="page-header-title">
+      <i class="bi bi-headset me-2" style="color:var(--primary);"></i>
+      IT Destek <span class="text-gradient">Akıllı Asistan</span>
+    </h1>
+    <p class="page-header-subtitle">
+      Anthropic Claude destekli IT destek chatbotu — sorunlarınızı anlatın, çözüm bulun veya ticket açın.
+    </p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge rounded-pill fw-semibold px-3 py-2"
+          style="background:#f0e8ff; color:#7c3aed; font-size:12px;">
+      <i class="bi bi-stars me-1"></i> Claude AI
+    </span>
+    <div style="font-size:13px; color:var(--text-secondary);">
+      Açık Ticket: 
+      <strong id="ticket-count" style="color:#ef4444;">{{ tickets|selectattr('status', 'equalto', 'Açık')|list|length }}</strong>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- ──────────────────────────────────────────────────────────────
+       SOL: CHATBOT PENCERESI
+  ────────────────────────────────────────────────────────────────── -->
+  <div class="col-xl-5 col-lg-6 animate-in">
+
+    <!-- Chat Kartı -->
+    <div class="chat-container">
+
+      <!-- Chat Başlığı -->
+      <div class="chat-header">
+        <div class="chat-header-avatar">🤖</div>
+        <div class="chat-header-info">
+          <h6>Hastane IT Destek Asistanı</h6>
+          <span>
+            <i class="online-dot"></i>
+            Çevrimiçi · Claude 3.5 Haiku
+          </span>
+        </div>
+      </div>
+
+      <!-- Mesajlar -->
+      <div class="chat-messages" id="chat-messages">
+
+        <!-- Karşılama Mesajı (statik, ilk yükleme) -->
+        <div class="message-wrapper">
+          <div class="message-avatar ai">🤖</div>
+          <div>
+            <div class="message-bubble ai">
+              👋 Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
+              Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
+              yaşadığınız sorunları benimle paylaşabilirsiniz. 
+              Size en hızlı çözümü sunmaya çalışacağım.<br><br>
+              Nasıl yardımcı olabilirim?
+            </div>
+            <div class="message-time">Şimdi</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Mesaj Giriş Alanı -->
+      <div class="chat-input-area">
+        <textarea
+          id="chat-input"
+          class="chat-input"
+          placeholder="Sorununuzu yazın... (Enter: Gönder, Shift+Enter: Yeni satır)"
+          rows="1"
+          aria-label="Mesaj girin"
+        ></textarea>
+        <button id="send-btn" class="chat-send-btn" title="Gönder" aria-label="Mesaj gönder">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ticket Aç Butonu -->
+    <div class="mt-3 d-flex gap-2">
+      <button id="open-ticket-btn" class="btn-danger-modern flex-grow-1 justify-content-center"
+              style="padding: 12px; font-size: 13.5px;">
+        🎫 Destek Talebi (Ticket) Aç
+      </button>
+      <button onclick="location.reload()" class="btn-outline-modern" 
+              style="padding: 10px 16px;" title="Yeni Konuşma Başlat">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+    </div>
+
+    <!-- Hızlı Sorular -->
+    <div class="card-modern mt-3 p-3">
+      <div class="fw-semibold mb-2" style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">
+        <i class="bi bi-lightning-charge me-1"></i> Sık Sorulan Sorular
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% set quick = [
+          "Yazıcım bağlantı vermiyor",
+          "HBYS sistemine giremiyorum",
+          "İnternet bağlantım yok",
+          "Bilgisayarım çok yavaş",
+          "Şifremi unuttum"
+        ] %}
+        {% for q in quick %}
+        <button 
+          onclick="document.getElementById('chat-input').value='{{ q }}'; document.getElementById('chat-input').dispatchEvent(new Event('input'));"
+          style="
+            background: #f8fafc; 
+            border: 1.5px solid var(--border); 
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+          "
+          onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'; this.style.background='var(--primary-light)';"
+          onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-primary)'; this.style.background='#f8fafc';"
+        >{{ q }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────────
+       SAĞ: AKTİF TİCKET LİSTESİ
+  ────────────────────────────────────────────────────────────────── -->
+  <div class="col-xl-7 col-lg-6 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-ticket-perforated-fill" style="color:var(--primary);"></i>
+          Destek Talepleri (Ticketlar)
+        </span>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge rounded-pill" style="background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:600;">
+            {{ tickets|selectattr('status', 'equalto', 'Açık')|list|length }} Açık
+          </span>
+          <span class="badge rounded-pill" style="background:#dcfce7; color:#15803d; font-size:11px; font-weight:600;">
+            {{ tickets|selectattr('status', 'equalto', 'Çözüldü')|list|length }} Çözüldü
+          </span>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
+        <table class="high-risk-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Sorun Açıklaması</th>
+              <th>Tarih</th>
+              <th>Durum</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="ticket-list-body">
+            {% if tickets %}
+              {% for ticket in tickets %}
+              <tr id="ticket-row-{{ ticket.id }}">
+                <td>
+                  <span class="fw-bold text-primary">#{{ ticket.id }}</span>
+                </td>
+                <td>
+                  <div style="max-width: 280px;">
+                    <div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      {{ ticket.problem_description[:80] }}{% if ticket.problem_description|length > 80 %}...{% endif %}
+                    </div>
+                    {% if ticket.user_message %}
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      💬 {{ ticket.user_message[:60] }}{% if ticket.user_message|length > 60 %}...{% endif %}
+                    </div>
+                    {% endif %}
+                  </div>
+                </td>
+                <td style="white-space:nowrap; font-size:12px; color:var(--text-secondary);">
+                  {{ ticket.date_created.strftime('%d.%m.%Y') }}<br>
+                  <span style="font-size:11px;">{{ ticket.date_created.strftime('%H:%M') }}</span>
+                </td>
+                <td>
+                  <span class="ticket-status-badge ticket-status-{{ 'open' if ticket.status == 'Açık' else 'closed' }}">
+                    {{ '🔴' if ticket.status == 'Açık' else '✅' }} {{ ticket.status }}
+                  </span>
+                </td>
+                <td>
+                  {% if ticket.status == 'Açık' %}
+                  <button class="btn-danger-modern" 
+                          onclick="closeTicket({{ ticket.id }})"
+                          id="close-btn-{{ ticket.id }}">
+                    ✓ Kapat
+                  </button>
+                  {% else %}
+                  <span style="font-size:12px; color:var(--text-muted);">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="empty-row">
+                <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">
+                  <div style="font-size:32px; margin-bottom:8px;">📭</div>
+                  <div style="font-size:14px; font-weight:500;">Henüz destek talebi bulunmuyor.</div>
+                  <div style="font-size:12px; margin-top:4px;">Chatbot üzerinden sorunuzu ilettiğinizde otomatik ticket oluşturulacaktır.</div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tablo alt bilgisi -->
+      <div style="padding:12px 20px; border-top:1px solid var(--border); font-size:11px; 
+                  color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+        <i class="bi bi-info-circle"></i>
+        Ticketlar 30 saniyede bir otomatik güncellenir. Manuel yenilemek için sayfayı yenileyin.
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
