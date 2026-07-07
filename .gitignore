@@ -1,0 +1,30 @@
+# .env dosyası asla Git'e eklenmemeli
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# SQLite veritabanı dosyaları
+*.db
+*.sqlite3
+
+# Model dosyaları (büyük boyutlu)
+# models/*.pkl  # Geliştirme ortamı için yorum satırına alındı
+
+# IDE ve editör dosyaları
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# İşletim sistemi dosyaları
+.DS_Store
+Thumbs.db
