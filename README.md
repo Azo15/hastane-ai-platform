@@ -124,5 +124,5 @@ Kolay test edilebilmesi için giriş ekranında şifre gerektirmeyen **"Hızlı 
 
 ---
 
-## 📄 Lisans
-Bu proje staj operasyonları kapsamında geliştirilmiştir. Tüm hakları saklıdır.
+## 🎓 Geliştirici Bilgileri & Lisans
+Bu proje, Kırklareli Üniversitesi Yazılım Mühendisliği Bölümü öğrencisi **Azo İSMAİL** tarafından staj operasyonları ve proje çalışmaları kapsamında geliştirilmiştir. Tüm hakları saklıdır.
