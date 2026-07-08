@@ -203,7 +203,7 @@ def reports():
 DEMO_USERS = {
     "sekreter": {
         "password": "123",
-        "name": "Merve Kaya",
+        "name": "HBYS Personeli",
         "role": "HBYS Kullanıcısı",
         "role_code": "sekreter"
     },
