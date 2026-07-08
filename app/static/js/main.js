@@ -710,6 +710,154 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// ─── No-Show Tahmin Sonucunu Dinamik Ekrana Yazma (AJAX) ───────────────────
+function renderPredictionResult(res) {
+  const container = document.getElementById("prediction-result-container");
+  if (!container) return;
+
+  let statusText = "";
+  let statusIcon = "";
+  if (res.risk_color === "success") {
+    statusText = "Düşük No-Show Riski";
+    statusIcon = '<i class="bi bi-check-circle-fill text-success"></i>';
+  } else if (res.risk_color === "warning") {
+    statusText = "Orta No-Show Riski";
+    statusIcon = '<i class="bi bi-exclamation-triangle-fill text-warning"></i>';
+  } else {
+    statusText = "Yüksek No-Show Riski";
+    statusIcon = '<i class="bi bi-exclamation-octagon-fill text-danger"></i>';
+  }
+
+  const predictionText = res.prediction === 1 ? "gelmeme" : "gelme";
+
+  let suggestion = "";
+  if (res.risk_color === "success") {
+    suggestion = "Standart randevu sürecine devam edilebilir. Ek müdahale gerekmemektedir.";
+  } else if (res.risk_color === "warning") {
+    suggestion = "SMS hatırlatması yapılması ve randevu günü tekrar aranması önerilir.";
+  } else {
+    suggestion = "Randevu günü sabahı hasta aranmalı, alternatif slot planlanmalı ve randevu hatırlatma katmanı artırılmalıdır.";
+  }
+
+  container.innerHTML = `
+    <div class="prediction-result-card ${res.risk_color} mb-4 animate-in" id="prediction-result" style="animation: slideInRight 0.3s ease;">
+      <div class="d-flex align-items-center gap-4 flex-wrap">
+        <!-- Risk Dairesi -->
+        <div class="risk-score-circle ${res.risk_color}">
+          <div class="risk-score-value">%${res.risk_score}</div>
+          <div class="risk-score-unit">Risk</div>
+        </div>
+
+        <!-- Detaylar -->
+        <div class="flex-grow-1">
+          <h4 style="font-family:'Outfit',sans-serif; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+            ${statusIcon} ${statusText}
+          </h4>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+            Tahmin: Bu hastanın randevuya <strong>${predictionText}</strong> olasılığı yüksektir.
+            Risk Skoru: <strong>${res.risk_score}%</strong>
+          </p>
+
+          <!-- Risk Bar -->
+          <div class="risk-bar-container" style="max-width:400px;">
+            <div class="risk-bar ${res.risk_color}" style="width: ${res.risk_score}%; transition: width 0.8s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
+          </div>
+
+          <!-- Öneri -->
+          <div class="mt-3 p-3 rounded-3" style="background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); font-size: 13px;">
+            <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> ${suggestion}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Sohbet Geçmişini Sıfırlama (AJAX) ──────────────────────────────────────
+function clearChat() {
+  if (!confirm("Sohbet geçmişinizi temizlemek istediğinize emin misiniz?")) return;
+
+  // 1. Dizi geçmişini temizle
+  conversationHistory = [];
+
+  // 2. DOM alanını temizle ve varsayılan karşılama mesajını ekle
+  if (chatMessages) {
+    chatMessages.innerHTML = `
+      <div class="message-wrapper">
+        <div class="message-avatar ai" style="display:inline-flex; align-items:center; justify-content:center;">
+          <i class="bi bi-robot text-white" style="font-size: 14px;"></i>
+        </div>
+        <div>
+          <div class="message-bubble ai">
+            Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
+            Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
+            yaşadığınız sorunları benimle paylaşabilirsiniz. 
+            Size en hızlı çözümü sunmaya çalışacağım.<br><br>
+            Nasıl yardımcı olabilirim?
+          </div>
+          <div class="message-time">Şimdi</div>
+        </div>
+      </div>
+    `;
+  }
+
+  showToast("Sohbet geçmişi temizlendi.", "success");
+}
+
+// ─── Raporları PDF veya Excel (CSV) Olarak Çıkarma ─────────────────────────
+function exportPDF() {
+  window.print();
+}
+
+async function exportExcel() {
+  try {
+    const resp = await fetch("/chatbot/tickets");
+    const data = await resp.json();
+    if (!data.success || !data.tickets) {
+      showToast("Talepler çekilirken hata oluştu.", "error");
+      return;
+    }
+
+    const tickets = data.tickets;
+    if (tickets.length === 0) {
+      showToast("Dışa aktarılacak bilet verisi bulunmuyor.", "warning");
+      return;
+    }
+
+    // CSV formatında oluştur
+    let csvContent = "\ufeff"; // Türkçe karakterlerin Excel'de düzgün açılması için BOM
+    csvContent += "Bilet ID,Problem Aciklamasi,Kullanici Mesaji,AI Cevabi,Olusturulma Tarihi,Durum\n";
+
+    tickets.forEach(t => {
+      const row = [
+        t.id,
+        `"${(t.problem_description || "").replace(/"/g, '""')}"`,
+        `"${(t.user_message || "").replace(/"/g, '""')}"`,
+        `"${(t.ai_response || "").replace(/"/g, '""')}"`,
+        t.date_created || "",
+        t.status || ""
+      ].join(",");
+      csvContent += row + "\n";
+    });
+
+    // İndirme işlemini tetikle
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "hastane_it_destek_talepleri.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast("IT Destek biletleri başarıyla CSV formatında indirildi.", "success");
+  } catch (error) {
+    console.error("Dışa aktarma hatası:", error);
+    showToast("Excel dosyası oluşturulurken hata oluştu.", "error");
+  }
+}
+
 // ─── Olay Dinleyicileri ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   // Chatbot olayları
@@ -729,6 +877,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (ticketBtn) {
     ticketBtn.addEventListener("click", openTicket);
+  }
+
+  // No-Show Tahmin Formunu AJAX ile gönderme
+  const predictForm = document.getElementById("predict-form");
+  if (predictForm) {
+    predictForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = predictForm.querySelector("button[type='submit']");
+      const origBtnText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Riski Tahmin Ediyor...';
+
+      const formData = new FormData(predictForm);
+      const data = {};
+      formData.forEach((value, key) => {
+        data[key] = value;
+      });
+
+      // Checkbox verilerini sıfır/bir yap (Flask'a uyumlu olması için)
+      const checkboxes = ['hipertension', 'diabetes', 'alcoholism', 'handcap', 'sms_received'];
+      checkboxes.forEach(cb => {
+        data[cb] = formData.has(cb) ? parseInt(formData.get(cb)) : 0;
+      });
+
+      try {
+        const response = await fetch("/no-show/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const res = await response.json();
+
+        if (res && res.risk_score !== undefined) {
+          renderPredictionResult(res);
+          showToast("No-Show risk olasılığı hesaplandı.", "success");
+        } else {
+          showToast("Tahmin hesaplanırken hata oluştu.", "error");
+        }
+      } catch (error) {
+        console.error("Tahmin Hatası:", error);
+        showToast("Sunucuyla bağlantı kurulamadı.", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnText;
+      }
+    });
   }
 
   // Risk bar animasyonları

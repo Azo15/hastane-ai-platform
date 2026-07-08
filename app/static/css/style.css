@@ -1013,3 +1013,29 @@ body {
   .main-content { padding: 16px; }
   .topbar { left: 0; }
 }
+
+/* ── Rapor Yazdırma (PDF) Stili ───────────────────────────────────────────── */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .sidebar, .topbar, .btn-primary-modern, .btn-outline-modern, #clear-chat-btn, .chat-send-btn, .page-header .d-flex {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  .card-modern, .prediction-result-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    page-break-inside: avoid;
+    background: white !important;
+  }
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
