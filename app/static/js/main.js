@@ -96,6 +96,7 @@ function addNotification(ticket, type = "ticket") {
   const el = document.createElement("div");
   el.id = `notif-item-${ticket.id}`;
   el.className = "notif-item unread";
+  el.setAttribute("onclick", `showTicketDetails(${ticket.id})`);
   el.style.cssText = [
     "padding:12px 18px",
     "border-bottom:1px solid #f1f5f9",
@@ -104,6 +105,7 @@ function addNotification(ticket, type = "ticket") {
     "display:flex",
     "gap:12px",
     "align-items:flex-start",
+    "cursor:pointer",
     "animation:slideInRight 0.3s ease",
   ].join(";");
 
@@ -158,6 +160,9 @@ async function initNotifications() {
     const data = await resp.json();
     const tickets = data.tickets || [];
 
+    // Detay modalında kullanmak üzere küresel değişkene kaydet
+    window.allLoadedTickets = tickets;
+
     if (loading) loading.remove();
 
     const dismissed = getDismissedTickets();
@@ -192,6 +197,7 @@ async function initNotifications() {
       const el = document.createElement("div");
       el.id = `notif-item-${ticket.id}`;
       el.className = isOpen ? "notif-item unread" : "notif-item";
+      el.setAttribute("onclick", `showTicketDetails(${ticket.id})`);
       el.style.cssText = [
         "padding:12px 18px",
         "border-bottom:1px solid #f1f5f9",
@@ -200,6 +206,7 @@ async function initNotifications() {
         "display:flex",
         "gap:12px",
         "align-items:flex-start",
+        "cursor:pointer",
       ].join(";");
 
       el.innerHTML = `

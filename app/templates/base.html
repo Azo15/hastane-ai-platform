@@ -137,12 +137,49 @@
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       ANA İÇERİK
-  ═══════════════════════════════════════════════════════════════════ -->
-  <main class="main-content" id="main-content">
-    {% block content %}{% endblock %}
-  </main>
+  <!-- Ticket Detay Modalı (Dinamik) -->
+  <div class="modal fade" id="ticketDetailModal" tabindex="-1" aria-labelledby="ticketDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow:hidden;">
+        <div class="modal-header text-white" style="background: linear-gradient(135deg, #0f1b35, #1a2d50); padding: 16px 24px; border:none;">
+          <h5 class="modal-title fw-bold" id="ticketDetailModalLabel" style="font-family:'Outfit', sans-serif; font-size:16px; display:flex; align-items:center;">
+            <i class="bi bi-ticket-detailed-fill me-2" style="color: #60a5fa; font-size:20px;"></i>
+            Destek Talebi Detayı
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat" style="font-size:12px;"></button>
+        </div>
+        <div class="modal-body p-4" style="background: #fdfdfd;">
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span class="fs-5 fw-bold text-primary" id="modal-ticket-id" style="font-family:'Outfit', sans-serif;">#0</span>
+            <span class="badge" id="modal-ticket-status" style="font-size:11px; padding: 6px 12px; border-radius: 20px; font-weight:600;">-</span>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Sorun Açıklaması</label>
+            <div class="p-3 bg-light rounded shadow-sm border border-light" id="modal-ticket-desc" style="font-size:13.5px; color:#2d3748; white-space: pre-wrap; line-height:1.5; font-family:'Inter', sans-serif;">-</div>
+          </div>
+
+          <div class="mb-3" id="modal-user-msg-container">
+            <label class="form-label fw-bold text-secondary" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Kullanıcı Mesajı</label>
+            <div class="p-3 bg-white rounded shadow-sm border-start border-primary border-3 border-top border-bottom border-end border-light" id="modal-user-msg" style="font-size:13px; color:#4a5568; font-style:italic; font-family:'Inter', sans-serif;">-</div>
+          </div>
+
+          <div class="mb-3" id="modal-ai-resp-container">
+            <label class="form-label fw-bold text-secondary" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Yapay Zeka Yanıtı</label>
+            <div class="p-3 bg-white rounded shadow-sm border-start border-success border-3 border-top border-bottom border-end border-light" id="modal-ai-resp" style="font-size:13px; color:#4a5568; font-family:'Inter', sans-serif;">-</div>
+          </div>
+
+          <div class="mt-4 pt-3 border-top d-flex justify-content-between text-muted" style="font-size:11px; font-family:'Inter', sans-serif;">
+            <span>Oluşturulma Tarihi: <strong id="modal-ticket-date" class="text-dark">-</strong></span>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-0 px-4 py-3" style="display:flex; justify-content:space-between;">
+          <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius:10px; font-size:13px; font-weight:600; font-family:'Outfit', sans-serif; background:#e2e8f0; color:#4a5568; border:none;">Kapat</button>
+          <button type="button" class="btn btn-danger px-4 py-2" id="modal-ticket-action-btn" style="border-radius:10px; font-size:13px; font-weight:600; font-family:'Outfit', sans-serif; background:#ef4444; border:none; display:none;">✓ Talebi Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Kapsayıcı -->
   <div class="toast-container-custom" id="toast-container"></div>
