@@ -106,6 +106,89 @@ function addNotification(ticket, type = "ticket") {
   }
 }
 
+// ─── Sayfa Yüklenince Gerçek Bildirimleri Çek ────────────────────────────
+async function initNotifications() {
+  const list    = document.getElementById("notif-list");
+  const badge   = document.getElementById("notif-count-badge");
+  const dot     = document.getElementById("notif-dot");
+  const loading = document.getElementById("notif-loading");
+  if (!list) return;
+
+  try {
+    const resp = await fetch("/chatbot/tickets");
+    if (!resp.ok) throw new Error("API yanıt vermedi");
+    const data = await resp.json();
+
+    const tickets = data.tickets || [];
+
+    // Yükleniyor yazısını kaldır
+    if (loading) loading.remove();
+
+    if (tickets.length === 0) {
+      list.innerHTML = `
+        <div style="padding:24px; text-align:center; color:#a0aec0; font-size:13px;">
+          <div style="font-size:28px; margin-bottom:8px;">🔔</div>
+          Henüz bildirim yok.
+        </div>`;
+      if (badge) { badge.textContent = "0"; badge.style.display = "none"; }
+      if (dot)   dot.style.display = "none";
+      return;
+    }
+
+    // En son 5 ticketı göster (en yeniden eskiye)
+    const recent = tickets.slice().reverse().slice(0, 5);
+    const openCount = recent.filter(t => t.status === "Açık").length;
+
+    recent.forEach(ticket => {
+      const isOpen   = ticket.status === "Açık";
+      const icon     = isOpen ? "🎫" : "✅";
+      const bg       = isOpen ? "#eff6ff" : "#f8fafc";
+      const descText = (ticket.problem_description || "Ticket oluşturuldu.")
+                       .substring(0, 55) + (ticket.problem_description?.length > 55 ? "…" : "");
+
+      const el = document.createElement("div");
+      el.className = isOpen ? "notif-item unread" : "notif-item";
+      el.setAttribute("onclick", "markRead(this)");
+      el.style.cssText = [
+        "padding:12px 18px",
+        "border-bottom:1px solid #f1f5f9",
+        "cursor:pointer",
+        `background:${bg}`,
+        "transition:background 0.2s",
+        "display:flex",
+        "gap:12px",
+        "align-items:flex-start",
+      ].join(";");
+
+      el.innerHTML = `
+        <span style="font-size:20px;margin-top:2px;">${icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#1a202c;">
+            ${isOpen ? "Açık" : "Çözüldü"} Destek Talebi #${ticket.id}
+          </div>
+          <div style="font-size:12px;color:#718096;margin-top:2px;">${escapeHtml(descText)}</div>
+          <div style="font-size:11px;color:#a0aec0;margin-top:3px;">${ticket.date_created || ""}</div>
+        </div>`;
+
+      list.appendChild(el);
+    });
+
+    // Badge güncelle
+    if (badge) {
+      badge.textContent = openCount;
+      badge.style.display = openCount > 0 ? "" : "none";
+    }
+    if (dot) dot.style.display = openCount > 0 ? "" : "none";
+
+  } catch (e) {
+    if (loading) loading.innerHTML = `<div style="padding:16px;text-align:center;color:#a0aec0;font-size:12px;">Bildirimler yüklenemedi.</div>`;
+    console.warn("Bildirim yükleme hatası:", e);
+  }
+}
+
+// Sayfa yüklenince bildirimleri çek
+document.addEventListener("DOMContentLoaded", initNotifications);
+
 // ─── Saat Güncelleyici ────────────────────────────────────────────────────
 function updateClock() {
   const el = document.getElementById("current-time");

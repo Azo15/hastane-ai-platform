@@ -114,49 +114,14 @@
                   color:white; padding:2px 8px; border-radius:20px; font-weight:600;">3</span>
           </div>
 
-          <!-- Bildirim listesi -->
+          <!-- Bildirim listesi (JS tarafından doldurulur) -->
           <div id="notif-list" style="max-height:300px; overflow-y:auto;">
-
-            <div class="notif-item unread" onclick="markRead(this)"
-                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
-                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
-              <span style="font-size:20px; margin-top:2px;">⚠️</span>
-              <div>
-                <div style="font-size:13px; font-weight:600; color:#1a202c;">Yüksek Riskli Randevu</div>
-                <div style="font-size:12px; color:#718096; margin-top:2px;">
-                  Ali Çelik — %91.2 no-show riski tespit edildi.
-                </div>
-                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 09:31</div>
-              </div>
+            <div id="notif-loading" style="padding:24px; text-align:center; color:#a0aec0; font-size:13px;">
+              <div style="font-size:24px; margin-bottom:6px;">🔄</div>
+              Yükleniyor...
             </div>
-
-            <div class="notif-item unread" onclick="markRead(this)"
-                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
-                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
-              <span style="font-size:20px; margin-top:2px;">🎫</span>
-              <div>
-                <div style="font-size:13px; font-weight:600; color:#1a202c;">Yeni IT Destek Talebi</div>
-                <div style="font-size:12px; color:#718096; margin-top:2px;">
-                  Yazıcı bağlantı sorunu — Ticket #2 açıldı.
-                </div>
-                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 08:55</div>
-              </div>
-            </div>
-
-            <div class="notif-item unread" onclick="markRead(this)"
-                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
-                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
-              <span style="font-size:20px; margin-top:2px;">🧠</span>
-              <div>
-                <div style="font-size:13px; font-weight:600; color:#1a202c;">AI Model Güncellendi</div>
-                <div style="font-size:12px; color:#718096; margin-top:2px;">
-                  LightGBM demo modeli başarıyla oluşturuldu.
-                </div>
-                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 08:00</div>
-              </div>
-            </div>
-
           </div>
+
 
           <!-- Alt kısım -->
           <div style="padding:10px 18px; background:#f8fafc; text-align:center; border-top:1px solid #e2e8f0;">
