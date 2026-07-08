@@ -24,34 +24,38 @@ TICKET_MARKER = "[##TICKET_GEREKLI##]"
 
 # ─── IT Destek Asistanı Sistem Promptu (Yedek) ───────────────────────────────
 DEFAULT_SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
-Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) \
-sorunlarına teknik çözüm üretirsin.
-Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver.
+Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) sorunlarına teknik çözüm üretirsin.
+Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver."""
+
+TICKET_INSTRUCTION = """
 
 ==== TICKET KURALI (ÇOK ÖNEMLİ) ====
 Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini SADECE şu durumlarda ekle:
-1. Sorunu KESINLIKLE uzaktan çözemiyorsan (donanım arızası, fiziksel müdahale vb.)
-2. Kullanıcı "ticket aç", "talep oluştur", "yetkiliyi ara" gibi bir şey istiyorsa
+1. Sorunu KESINLIKLE uzaktan çözemiyorsan (donanım arızası, fiziksel müdahale, kablo değişikliği, teknik ekibin gitmesi vb.)
+2. Kullanıcı "ticket aç", "talep oluştur", "ekip çağır", "ekip yola çıksın", "ekip yönlendir" gibi bir istekte bulunuyorsa.
 
-Selamlama, basit soru, yönlendirme, tavsiye, adım adım rehberlik gibi NORMAL yanıtlarda
-bu işareti KESİNLİKLE KULLANMA. İşaret olmadan da yardım edebiliyorsan, etmeye devam et.
-
+Selamlama, basit soru, yönlendirme, tavsiye, adım adım rehberlik gibi NORMAL yanıtlarda bu işareti KESİNLİKLE KULLANMA.
 Yanıtın sonundaki bu işaret kullanıcıya gösterilmez; sistem otomatik ticket açar.
 ======================================"""
 
 def get_dynamic_prompt() -> str:
-    """Settings.json dosyasından dinamik prompt okur, yoksa yedeği döner."""
+    """Settings.json dosyasından dinamik prompt okur, sonuna ticket kuralını ekler."""
+    base_prompt = DEFAULT_SYSTEM_PROMPT
     try:
         root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         settings_path = os.path.join(root, "instance", "settings.json")
         if os.path.exists(settings_path):
             with open(settings_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
+                base_prompt = data.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
     except Exception as e:
         logger.warning(f"Dinamik prompt okunamadi: {e}")
-    return DEFAULT_SYSTEM_PROMPT
-
+        
+    # Eğer prompt içinde ticket kuralı yoksa otomatik ekle
+    if "TICKET_GEREKLI" not in base_prompt and "TICKET KURALI" not in base_prompt:
+        base_prompt += TICKET_INSTRUCTION
+        
+    return base_prompt
 
 
 def _get_provider():
@@ -83,8 +87,33 @@ def _get_provider():
 
 
 def should_create_ticket(response_text: str) -> bool:
-    """Yanıtta gizli ticket marker var mı kontrol eder."""
-    return TICKET_MARKER in response_text
+    """Yanıtta gizli ticket marker veya bilet açıldığını/ekibin yola çıktığını bildiren ifadeler var mı kontrol eder."""
+    if TICKET_MARKER in response_text:
+        return True
+
+    # Ekibin yola çıktığını veya kaydın açıldığını bildiren anlamsal yedek kelimeler
+    indicators = [
+        "yola çık",
+        "yola koyul",
+        "ekip yönlendir",
+        "ekibim yönlendir",
+        "talep oluştur",
+        "bilet oluştur",
+        "bilet aç",
+        "destek talebi aç",
+        "arıza kaydı oluştur",
+        "kayıt açt",
+        "fiziksel müdahale",
+        "donanım arızası",
+        "teknisyen"
+    ]
+    
+    clean_text = response_text.lower()
+    for ind in indicators:
+        if ind in clean_text:
+            return True
+            
+    return False
 
 
 def clean_response(response_text: str) -> str:
