@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Sistem Ayarları — {{ system_settings.hospital_name }}{% endblock %}
+{% block page_title %}Sistem Ayarları{% endblock %}
+{% block breadcrumb %}Sistem Ayarları / Yönetim Paneli{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <div>
+    <h1 class="page-header-title">
+      <i class="bi bi-gear-fill me-2" style="color:var(--primary);"></i>
+      Sistem <span class="text-gradient">Konfigürasyonu</span>
+    </h1>
+    <p class="page-header-subtitle">
+      Yapay Zeka API anahtarlarını, aktif modelleri ve asistan sistem rol tanımlarını bu panelden yönetebilirsiniz.
+    </p>
+  </div>
+</div>
+
+<!-- Flash Bildirimleri -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show border-0 shadow-sm mb-4 animate-in" 
+           style="border-radius:12px; font-size:14px; font-weight:500;" role="alert">
+        <i class="bi {{ 'bi-check-circle-fill' if category == 'success' else 'bi-exclamation-triangle-fill' }} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+  <!-- AYARLAR FORMU -->
+  <div class="col-xl-8 col-lg-7 animate-in">
+    <div class="card-modern">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-sliders2" style="color:var(--primary);"></i>
+          Genel ve AI Platform Ayarları
+        </span>
+      </div>
+      
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('main.settings') }}">
+          
+          <!-- HASTANE ADI -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">🏥 Hastane Adı</label>
+            <input type="text" class="form-control px-3 py-2" name="hospital_name" 
+                   value="{{ settings.hospital_name }}" 
+                   placeholder="Örn: Hastane AI" required
+                   style="border-radius:10px; border:1.5px solid var(--border); font-size:14px;">
+            <div class="form-text text-muted" style="font-size:11px;">Sol menü ve platform genelinde görüntülenecek kurum ismi.</div>
+          </div>
+
+          <hr class="my-4" style="border-color:var(--border);">
+
+          <!-- SAĞLAYICI SEÇİMİ -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">🤖 Aktif Yapay Zeka Sağlayıcısı</label>
+            <div class="d-flex gap-3">
+              <!-- Groq -->
+              <label class="flex-fill p-3 border rounded d-flex align-items-center gap-3" style="cursor:pointer; border-radius:12px; border:1.5px solid var(--border); transition:all 0.2s;" id="label-provider-groq">
+                <input type="radio" name="default_provider" value="groq" {% if settings.default_provider == 'groq' %}checked{% endif %} 
+                       onclick="switchProviderUI('groq')" style="transform:scale(1.2);">
+                <div>
+                  <div style="font-size:14px; font-weight:600; color:#1e293b;">Groq AI (Ücretsiz / Demo)</div>
+                  <div style="font-size:11px; color:#64748b;">Llama 3.3 70B modeli ile ultra hızlı ve ücretsiz API.</div>
+                </div>
+              </label>
+
+              <!-- Anthropic -->
+              <label class="flex-fill p-3 border rounded d-flex align-items-center gap-3" style="cursor:pointer; border-radius:12px; border:1.5px solid var(--border); transition:all 0.2s;" id="label-provider-anthropic">
+                <input type="radio" name="default_provider" value="anthropic" {% if settings.default_provider == 'anthropic' %}checked{% endif %} 
+                       onclick="switchProviderUI('anthropic')" style="transform:scale(1.2);">
+                <div>
+                  <div style="font-size:14px; font-weight:600; color:#1e293b;">Anthropic Claude (Production)</div>
+                  <div style="font-size:11px; color:#64748b;">Claude 3.5 Haiku ile gelişmiş akıl yürütme.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- API ANAHTARLARI -->
+          <div class="row g-3 mb-4">
+            <!-- Groq API Key -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Groq API Key</label>
+              <input type="password" class="form-control px-3 py-2" name="groq_key" 
+                     placeholder="{% if keys.groq_key %}Maskelendi: {{ keys.groq_key }}{% else %}gsk_... anahtarınızı girin{% endif %}"
+                     style="border-radius:10px; border:1.5px solid var(--border); font-size:13px;">
+              <div class="form-text text-muted" style="font-size:11px;">API key güncellenmek istenmiyorsa boş bırakılmalıdır.</div>
+            </div>
+
+            <!-- Anthropic API Key -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Anthropic API Key</label>
+              <input type="password" class="form-control px-3 py-2" name="anthropic_key" 
+                     placeholder="{% if keys.anthropic_key %}Maskelendi: {{ keys.anthropic_key }}{% else %}sk-ant-... anahtarınızı girin{% endif %}"
+                     style="border-radius:10px; border:1.5px solid var(--border); font-size:13px;">
+              <div class="form-text text-muted" style="font-size:11px;">API key güncellenmek istenmiyorsa boş bırakılmalıdır.</div>
+            </div>
+          </div>
+
+          <hr class="my-4" style="border-color:var(--border);">
+
+          <!-- AI SYSTEM PROMPT -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">⚙️ AI Sistem Rol Promptu</label>
+            <textarea class="form-control p-3" name="system_prompt" rows="8" required
+                      style="border-radius:12px; border:1.5px solid var(--border); font-size:13px; font-family:'Courier New', monospace; line-height:1.5;">{{ settings.system_prompt }}</textarea>
+            <div class="form-text text-muted" style="font-size:11px; margin-top:6px;">
+              Robotun hastane asistanı olarak konuşma tarzını, uzmanlık alanını ve otomatik bilet kesme kurallarını bu prompt belirler.
+            </div>
+          </div>
+
+          <!-- GÖNDERME BUTONU -->
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary px-5 py-2.5 fw-bold" 
+                    style="border-radius:10px; font-family:'Outfit', sans-serif; font-size:14px; background:linear-gradient(135deg, var(--primary), var(--primary-dark)); border:none;">
+              <i class="bi bi-check2-circle me-1"></i> Ayarları Değişiklikleri Kaydet
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ TARAFTAKİ YARDIM KARTI -->
+  <div class="col-xl-4 col-lg-5 animate-in">
+    <div class="card-modern mb-4">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-info-circle-fill" style="color:var(--primary);"></i>
+          Yardım ve Bilgilendirme
+        </span>
+      </div>
+      <div class="card-body p-4" style="font-size:13px; color:#4a5568; line-height:1.6;">
+        <div class="mb-3">
+          <strong class="text-dark">Ücretsiz Groq API Kullanımı:</strong>
+          <p class="mb-2">Herhangi bir ücret ödemeden hızlı test gerçekleştirmek için Groq sağlayıcısını kullanabilirsiniz:</p>
+          <ol class="ps-3 mb-0">
+            <li><a href="https://console.groq.com" target="_blank">console.groq.com</a> adresine gidin.</li>
+            <li>API Keys menüsünden yeni bir anahtar oluşturun.</li>
+            <li>Soldaki forma yapıştırıp kaydedin.</li>
+          </ol>
+        </div>
+        
+        <div class="mb-3 border-top pt-3">
+          <strong class="text-dark">Sistem Promptu ve Bilet Kesme:</strong>
+          <p class="mb-0">
+            Chatbot, prompt içindeki kurallara göre hastane personeline yanıt verir. AI'ın talebi biletleştirebilmesi için promptun sonuna 
+            <code class="px-1 py-0.5 bg-light rounded text-danger">[##TICKET_GEREKLI##]</code> marker'ını koyması emredilmiştir.
+          </p>
+        </div>
+        
+        <div class="border-top pt-3">
+          <strong class="text-dark">Ortam Değişkenleri:</strong>
+          <p class="mb-0">
+            Kaydedilen API anahtarları projedeki <code class="px-1 bg-light rounded">.env</code> dosyasına otomatik yazılır. Dosya, git repolarına yüklenmeyecek şekilde hariç tutulmuştur.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchProviderUI(provider) {
+  const groqLabel = document.getElementById('label-provider-groq');
+  const anthropicLabel = document.getElementById('label-provider-anthropic');
+  
+  if (provider === 'groq') {
+    groqLabel.style.borderColor = 'var(--primary)';
+    groqLabel.style.background = 'var(--primary-light)';
+    anthropicLabel.style.borderColor = 'var(--border)';
+    anthropicLabel.style.background = 'transparent';
+  } else {
+    anthropicLabel.style.borderColor = 'var(--primary)';
+    anthropicLabel.style.background = 'var(--primary-light)';
+    groqLabel.style.borderColor = 'var(--border)';
+    groqLabel.style.background = 'transparent';
+  }
+}
+
+// Başlangıç renklerini ayarla
+document.addEventListener("DOMContentLoaded", () => {
+  const active = "{{ settings.default_provider }}";
+  switchProviderUI(active);
+});
+</script>
+{% endblock %}
