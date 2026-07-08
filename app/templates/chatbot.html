@@ -39,7 +39,7 @@
 
       <!-- Chat Başlığı -->
       <div class="chat-header">
-        <div class="chat-header-avatar">🤖</div>
+        <div class="chat-header-avatar"><i class="bi bi-robot text-white fs-5"></i></div>
         <div class="chat-header-info">
           <h6>Hastane IT Destek Asistanı</h6>
           <span>
@@ -54,10 +54,10 @@
 
         <!-- Karşılama Mesajı (statik, ilk yükleme) -->
         <div class="message-wrapper">
-          <div class="message-avatar ai">🤖</div>
+          <div class="message-avatar ai"><i class="bi bi-robot text-white fs-6"></i></div>
           <div>
             <div class="message-bubble ai">
-              👋 Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
+              Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
               Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
               yaşadığınız sorunları benimle paylaşabilirsiniz. 
               Size en hızlı çözümü sunmaya çalışacağım.<br><br>
@@ -177,7 +177,7 @@
                     </div>
                     {% if ticket.user_message %}
                     <div style="font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                      💬 {{ ticket.user_message[:60] }}{% if ticket.user_message|length > 60 %}...{% endif %}
+                      <i class="bi bi-chat-text-fill text-muted me-1" style="font-size: 11px;"></i> {{ ticket.user_message[:60] }}{% if ticket.user_message|length > 60 %}...{% endif %}
                     </div>
                     {% endif %}
                   </div>
@@ -187,8 +187,13 @@
                   <span style="font-size:11px;">{{ ticket.date_created.strftime('%H:%M') }}</span>
                 </td>
                 <td>
-                  <span class="ticket-status-badge ticket-status-{{ 'open' if ticket.status == 'Açık' else 'closed' }}">
-                    {{ '🔴' if ticket.status == 'Açık' else '✅' }} {{ ticket.status }}
+                  <span class="ticket-status-badge ticket-status-{{ 'open' if ticket.status == 'Açık' else 'closed' }}" style="display:inline-flex; align-items:center; gap:4px;">
+                    {% if ticket.status == 'Açık' %}
+                      <i class="bi bi-exclamation-circle-fill"></i>
+                    {% else %}
+                      <i class="bi bi-check-circle-fill"></i>
+                    {% endif %}
+                    {{ ticket.status }}
                   </span>
                 </td>
                 <td>
@@ -207,9 +212,9 @@
             {% else %}
               <tr class="empty-row">
                 <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">
-                  <div style="font-size:32px; margin-bottom:8px;">📭</div>
+                  <div style="font-size:32px; margin-bottom:8px;"><i class="bi bi-inbox text-muted"></i></div>
                   <div style="font-size:14px; font-weight:500;">Henüz destek talebi bulunmuyor.</div>
-                  <div style="font-size:12px; margin-top:4px;">Chatbot üzerinden sorunuzu ilettiğinizde otomatik ticket oluşturulacaktır.</div>
+                  <div style="font-size:12px; margin-top:4px;">Chatbot üzerinden sorunuzu ilettiğinizde otomatik bilet oluşturulacaktır.</div>
                 </td>
               </tr>
             {% endif %}
