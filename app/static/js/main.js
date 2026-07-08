@@ -16,6 +16,27 @@ const ticketBtn      = document.getElementById("open-ticket-btn");
 const ticketListBody = document.getElementById("ticket-list-body");
 const ticketCount    = document.getElementById("ticket-count");
 
+// ─── Bildirim: Okundu İşaretleme ──────────────────────────────────────────
+function markRead(el) {
+  if (!el.classList.contains("unread")) return;
+  el.classList.remove("unread");
+  el.style.background = "#ffffff";
+
+  // Okunmamış sayısını güncelle
+  const badge = document.getElementById("notif-count-badge");
+  const dot   = document.getElementById("notif-dot");
+  if (badge) {
+    const current = parseInt(badge.textContent) || 0;
+    const newCount = Math.max(0, current - 1);
+    badge.textContent = newCount;
+    if (newCount === 0) {
+      badge.style.display = "none";
+      if (dot) dot.style.display = "none";
+    }
+  }
+}
+
+
 // ─── Saat Güncelleyici ────────────────────────────────────────────────────
 function updateClock() {
   const el = document.getElementById("current-time");

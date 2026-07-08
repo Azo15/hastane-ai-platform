@@ -92,11 +92,82 @@
         <i class="bi bi-clock me-1"></i>
         <span id="current-time">--:--:--</span>
       </div>
-      <!-- Bildirim ikonu -->
-      <div class="topbar-badge" title="Bildirimler">
-        <i class="bi bi-bell-fill"></i>
-        <span class="badge-dot"></span>
+      <!-- Bildirim ikonu — Bootstrap Dropdown -->
+      <div class="dropdown">
+        <div class="topbar-badge" id="notif-btn" data-bs-toggle="dropdown"
+             aria-expanded="false" title="Bildirimler" style="cursor:pointer;">
+          <i class="bi bi-bell-fill"></i>
+          <span class="badge-dot" id="notif-dot"></span>
+        </div>
+
+        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0"
+             aria-labelledby="notif-btn"
+             style="width:340px; border-radius:14px; overflow:hidden; margin-top:10px;">
+
+          <!-- Başlık -->
+          <div style="padding:14px 18px 12px; background:linear-gradient(135deg,#0f1b35,#1a2d50);
+                      display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:14px; font-weight:700; color:#fff;">
+              <i class="bi bi-bell-fill me-2" style="color:#60a5fa;"></i>Bildirimler
+            </span>
+            <span id="notif-count-badge" style="font-size:11px; background:#ef4444;
+                  color:white; padding:2px 8px; border-radius:20px; font-weight:600;">3</span>
+          </div>
+
+          <!-- Bildirim listesi -->
+          <div id="notif-list" style="max-height:300px; overflow-y:auto;">
+
+            <div class="notif-item unread" onclick="markRead(this)"
+                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
+                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
+              <span style="font-size:20px; margin-top:2px;">⚠️</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#1a202c;">Yüksek Riskli Randevu</div>
+                <div style="font-size:12px; color:#718096; margin-top:2px;">
+                  Ali Çelik — %91.2 no-show riski tespit edildi.
+                </div>
+                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 09:31</div>
+              </div>
+            </div>
+
+            <div class="notif-item unread" onclick="markRead(this)"
+                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
+                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
+              <span style="font-size:20px; margin-top:2px;">🎫</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#1a202c;">Yeni IT Destek Talebi</div>
+                <div style="font-size:12px; color:#718096; margin-top:2px;">
+                  Yazıcı bağlantı sorunu — Ticket #2 açıldı.
+                </div>
+                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 08:55</div>
+              </div>
+            </div>
+
+            <div class="notif-item unread" onclick="markRead(this)"
+                 style="padding:12px 18px; border-bottom:1px solid #f1f5f9; cursor:pointer;
+                        background:#eff6ff; transition:background 0.2s; display:flex; gap:12px; align-items:flex-start;">
+              <span style="font-size:20px; margin-top:2px;">🧠</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#1a202c;">AI Model Güncellendi</div>
+                <div style="font-size:12px; color:#718096; margin-top:2px;">
+                  LightGBM demo modeli başarıyla oluşturuldu.
+                </div>
+                <div style="font-size:11px; color:#a0aec0; margin-top:3px;">Bugün 08:00</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Alt kısım -->
+          <div style="padding:10px 18px; background:#f8fafc; text-align:center; border-top:1px solid #e2e8f0;">
+            <a href="{{ url_for('chatbot.index') }}"
+               style="font-size:12px; color:#1a73e8; font-weight:600; text-decoration:none;">
+              Tüm Bildirimleri Gör →
+            </a>
+          </div>
+        </div>
       </div>
+
     </div>
   </header>
 
