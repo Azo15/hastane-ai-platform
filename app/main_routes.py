@@ -4,7 +4,7 @@ app/main_routes.py — Ana Sayfa, Ayarlar ve Raporlar rotaları
 
 import os
 import json
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from .database import db, Ticket
 
 main_bp = Blueprint("main", __name__)
@@ -190,3 +190,60 @@ def reports():
                            ticket_stats={"open": open_t, "resolved": resolved_t, "total": open_t + resolved_t},
                            categories=categories,
                            no_show_stats=no_show_stats)
+
+
+# ─── OTURUM VE YETKİLENDİRME (DEMO USERS) ────────────────────────────────────
+DEMO_USERS = {
+    "sekreter": {
+        "password": "123",
+        "name": "Merve Kaya",
+        "role": "Poliklinik Sekreteri",
+        "role_code": "sekreter"
+    },
+    "admin": {
+        "password": "123",
+        "name": "Bilgi İşlem",
+        "role": "Sistem Yöneticisi",
+        "role_code": "admin"
+    }
+}
+
+@main_bp.before_app_request
+def check_login():
+    """Giriş yapılmamışsa giriş sayfasına yönlendir."""
+    # Giriş gerekmeyen rotalar ve statik dosyalar
+    allowed_routes = ["main.login", "static"]
+    if request.endpoint and request.endpoint not in allowed_routes:
+        if not session.get("logged_in"):
+            return redirect(url_for("main.login"))
+
+@main_bp.route("/login", methods=["GET", "POST"])
+def login():
+    """Rol bazlı giriş ekranı."""
+    if session.get("logged_in"):
+        return redirect(url_for("main.index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        password = request.form.get("password", "").strip()
+
+        user = DEMO_USERS.get(username)
+        if user and user["password"] == password:
+            session["logged_in"] = True
+            session["username"] = username
+            session["user_name"] = user["name"]
+            session["user_role"] = user["role"]
+            session["user_role_code"] = user["role_code"]
+            flash(f"Hoş geldiniz, {user['name']}!", "success")
+            return redirect(url_for("main.index"))
+        else:
+            flash("Geçersiz kullanıcı adı veya şifre.", "error")
+
+    return render_template("login.html")
+
+@main_bp.route("/logout")
+def logout():
+    """Oturumu sonlandır."""
+    session.clear()
+    flash("Başarıyla çıkış yapıldı.", "info")
+    return redirect(url_for("main.login"))

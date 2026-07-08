@@ -53,12 +53,13 @@
         <span>IT Destek &amp; Chatbot</span>
       </a>
 
+      {% if session.user_role_code == 'admin' %}
       <div class="nav-section-label" style="margin-top: 16px;">Sistem</div>
 
       <a href="{{ url_for('main.settings') }}" 
          class="nav-item-link {% if request.endpoint == 'main.settings' %}active{% endif %}">
         <span class="nav-item-icon"><i class="bi bi-gear-fill"></i></span>
-        <span>Ayarlar</span>
+         <span>Ayarlar</span>
       </a>
 
       <a href="{{ url_for('main.reports') }}" 
@@ -66,16 +67,24 @@
         <span class="nav-item-icon"><i class="bi bi-bar-chart-fill"></i></span>
         <span>Raporlar</span>
       </a>
+      {% endif %}
     </nav>
 
     <!-- Kullanıcı Bilgisi -->
     <div class="sidebar-footer">
-      <div class="sidebar-footer-info">
-        <div class="avatar">BT</div>
-        <div class="user-info">
-          <div class="user-name">Bilgi İşlem</div>
-          <div class="user-role">Sistem Yöneticisi</div>
+      <div class="sidebar-footer-info d-flex align-items-center justify-content-between w-100">
+        <div class="d-flex align-items-center gap-2">
+          <div class="avatar" style="text-transform: uppercase;">
+            {{ session.user_name[0] }}{{ session.user_name.split(' ')[1][0] if session.user_name.split(' ')|length > 1 else '' }}
+          </div>
+          <div class="user-info">
+            <div class="user-name" style="font-size: 13px; font-weight: 600;">{{ session.user_name }}</div>
+            <div class="user-role" style="font-size: 11px; opacity: 0.7;">{{ session.user_role }}</div>
+          </div>
         </div>
+        <a href="{{ url_for('main.logout') }}" class="text-white opacity-75 hover-opacity-100 ms-auto" title="Çıkış Yap" style="font-size: 18px; margin-right: 4px; transition: opacity 0.2s; text-decoration: none;">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
       </div>
     </div>
   </aside>
