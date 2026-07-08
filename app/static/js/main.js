@@ -16,13 +16,44 @@ const ticketBtn      = document.getElementById("open-ticket-btn");
 const ticketListBody = document.getElementById("ticket-list-body");
 const ticketCount    = document.getElementById("ticket-count");
 
-// ─── Bildirim: Okundu İşaretleme ──────────────────────────────────────────
-function markRead(el) {
-  if (!el.classList.contains("unread")) return;
-  el.classList.remove("unread");
-  el.style.background = "#ffffff";
+// ─── Bildirim Yardımcıları (Local Storage) ──────────────────────────────────
+function getDismissedTickets() {
+  try {
+    return JSON.parse(localStorage.getItem("dismissed_tickets")) || [];
+  } catch (e) {
+    return [];
+  }
+}
 
-  // Okunmamış sayısını güncelle
+function dismissNotification(ticketId, event) {
+  if (event) event.stopPropagation();
+
+  const dismissed = getDismissedTickets();
+  if (!dismissed.includes(ticketId)) {
+    dismissed.push(ticketId);
+    localStorage.setItem("dismissed_tickets", JSON.stringify(dismissed));
+  }
+
+  // Animasyonla DOM'dan kaldır
+  const el = document.getElementById(`notif-item-${ticketId}`);
+  if (el) {
+    el.style.opacity = "0";
+    el.style.transform = "translateX(30px)";
+    setTimeout(() => {
+      el.remove();
+      
+      const list = document.getElementById("notif-list");
+      if (list && list.querySelectorAll(".notif-item").length === 0) {
+        list.innerHTML = `
+          <div style="padding:28px 18px; text-align:center; color:#a0aec0; font-size:13px;">
+            <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+            Henüz yeni bildirim yok.
+          </div>`;
+      }
+    }, 300);
+  }
+
+  // Açık sayaç değerini azalt
   const badge = document.getElementById("notif-count-badge");
   const dot   = document.getElementById("notif-dot");
   if (badge) {
@@ -36,7 +67,6 @@ function markRead(el) {
   }
 }
 
-
 // ─── Bildirim Paneline Yeni Bildirim Ekle ─────────────────────────────────
 function addNotification(ticket, type = "ticket") {
   const list  = document.getElementById("notif-list");
@@ -44,33 +74,33 @@ function addNotification(ticket, type = "ticket") {
   const dot   = document.getElementById("notif-dot");
   if (!list) return;
 
-  // Zaman etiketi
+  // "Kayıt yok" veya "yükleniyor" varsa temizle
+  const emptyOrLoading = list.querySelector("div[style*='text-align:center']");
+  if (emptyOrLoading) emptyOrLoading.remove();
+
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const timeStr = `Bugün ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-  // İkon ve başlık seçimi
   let icon  = "🎫";
-  let title = `Yeni Destek Talebi #${ticket.id}`;
+  let title = `Talep #${ticket.id} (Açık)`;
   let desc  = ticket.problem_description
     ? ticket.problem_description.substring(0, 60) + (ticket.problem_description.length > 60 ? "..." : "")
     : "Yeni ticket oluşturuldu.";
 
   if (type === "auto") {
     icon  = "🤖";
-    title = `Otomatik Ticket #${ticket.id} Oluşturuldu`;
+    title = `Otomatik Talep #${ticket.id}`;
   }
 
-  // Bildirim elementi
   const el = document.createElement("div");
+  el.id = `notif-item-${ticket.id}`;
   el.className = "notif-item unread";
-  el.setAttribute("onclick", "markRead(this)");
   el.style.cssText = [
     "padding:12px 18px",
     "border-bottom:1px solid #f1f5f9",
-    "cursor:pointer",
     "background:#eff6ff",
-    "transition:background 0.2s",
+    "transition:all 0.3s ease",
     "display:flex",
     "gap:12px",
     "align-items:flex-start",
@@ -79,17 +109,26 @@ function addNotification(ticket, type = "ticket") {
 
   el.innerHTML = `
     <span style="font-size:20px;margin-top:2px;">${icon}</span>
-    <div>
+    <div style="min-width:0; flex:1;">
       <div style="font-size:13px;font-weight:600;color:#1a202c;">${title}</div>
-      <div style="font-size:12px;color:#718096;margin-top:2px;">${desc}</div>
-      <div style="font-size:11px;color:#a0aec0;margin-top:3px;">${timeStr}</div>
+      <div style="font-size:12px;color:#718096;margin-top:2px;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${escapeHtml(desc)}
+      </div>
+      <div style="font-size:11px;color:#a0aec0;margin-top:3px;display:flex;justify-content:space-between;align-items:center;">
+        <span>${timeStr}</span>
+        <button class="btn btn-sm p-0 text-primary fw-semibold" 
+                onclick="dismissNotification(${ticket.id}, event)"
+                style="font-size:11px;text-decoration:none;border:none;background:none;cursor:pointer;">
+          ✓ Okundu İşaretle
+        </button>
+      </div>
     </div>
   `;
 
-  // En üste ekle
   list.insertBefore(el, list.firstChild);
 
-  // Sayacı artır
+  // Sayacı artır (Açık ticket ise)
   if (badge) {
     const current = parseInt(badge.textContent) || 0;
     badge.textContent = current + 1;
@@ -97,11 +136,10 @@ function addNotification(ticket, type = "ticket") {
   }
   if (dot) dot.style.display = "";
 
-  // Çanı hafifçe salla (animasyon)
   const bellIcon = document.querySelector("#notif-btn .bi-bell-fill");
   if (bellIcon) {
     bellIcon.style.animation = "none";
-    bellIcon.offsetHeight; // reflow
+    bellIcon.offsetHeight;
     bellIcon.style.animation = "bell-shake 0.5s ease";
   }
 }
@@ -120,25 +158,29 @@ async function initNotifications() {
     const data = await resp.json();
     const tickets = data.tickets || [];
 
-    // Yükleniyor yazısını kaldır
     if (loading) loading.remove();
 
-    if (tickets.length === 0) {
+    const dismissed = getDismissedTickets();
+
+    // Okunmuş olarak işaretlenmeyenleri filtrele
+    const activeNotifications = tickets.filter(t => !dismissed.includes(t.id));
+
+    if (activeNotifications.length === 0) {
       list.innerHTML = `
         <div style="padding:28px 18px; text-align:center; color:#a0aec0; font-size:13px;">
           <div style="font-size:32px; margin-bottom:8px;">🔔</div>
-          Henüz destek talebi yok.
+          Henüz yeni bildirim yok.
         </div>`;
       if (badge) badge.style.display = "none";
       if (dot)   dot.style.display   = "none";
       return;
     }
 
-    // Toplam açık ticket sayısı (badge için tüm liste)
-    const totalOpen = tickets.filter(t => t.status === "Açık").length;
+    list.innerHTML = "";
 
-    // Gösterim için en son 5 ticket (en yeniden eskiye)
-    const recent = tickets.slice().reverse().slice(0, 5);
+    // API'den gelen liste zaten azalan sırada (en yeni ilk). Sadece ilk 5'i alıyoruz.
+    const recent = activeNotifications.slice(0, 5);
+    const openCount = activeNotifications.filter(t => t.status === "Açık").length;
 
     recent.forEach(ticket => {
       const isOpen   = ticket.status === "Açık";
@@ -148,14 +190,13 @@ async function initNotifications() {
       const descShort = desc.length > 58 ? desc.substring(0, 58) + "…" : desc;
 
       const el = document.createElement("div");
+      el.id = `notif-item-${ticket.id}`;
       el.className = isOpen ? "notif-item unread" : "notif-item";
-      el.setAttribute("onclick", "markRead(this)");
       el.style.cssText = [
         "padding:12px 18px",
         "border-bottom:1px solid #f1f5f9",
-        "cursor:pointer",
-        `background:${bg}`,
-        "transition:background 0.2s",
+        "background:" + bg,
+        "transition:all 0.3s ease",
         "display:flex",
         "gap:12px",
         "align-items:flex-start",
@@ -163,15 +204,22 @@ async function initNotifications() {
 
       el.innerHTML = `
         <span style="font-size:20px;margin-top:2px;">${icon}</span>
-        <div style="min-width:0;">
+        <div style="min-width:0; flex:1;">
           <div style="font-size:13px;font-weight:600;color:#1a202c;">
-            ${isOpen ? "🔴 Açık" : "✅ Çözüldü"} — Talep #${ticket.id}
+            Talep #${ticket.id} (${isOpen ? "Açık" : "Çözüldü"})
           </div>
           <div style="font-size:12px;color:#718096;margin-top:2px;
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(desc)}">
             ${escapeHtml(descShort)}
           </div>
-          <div style="font-size:11px;color:#a0aec0;margin-top:3px;">${ticket.date_created || ""}</div>
+          <div style="font-size:11px;color:#a0aec0;margin-top:3px;display:flex;justify-content:space-between;align-items:center;">
+            <span>${ticket.date_created || ""}</span>
+            <button class="btn btn-sm p-0 text-primary fw-semibold" 
+                    onclick="dismissNotification(${ticket.id}, event)"
+                    style="font-size:11px;text-decoration:none;border:none;background:none;cursor:pointer;">
+              ✓ Okundu İşaretle
+            </button>
+          </div>
         </div>`;
 
       list.appendChild(el);
