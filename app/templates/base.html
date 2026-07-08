@@ -24,7 +24,7 @@
 
     <!-- Logo -->
     <a class="sidebar-logo" href="{{ url_for('main.index') }}">
-      <div class="sidebar-logo-icon">🏥</div>
+      <div class="sidebar-logo-icon"><i class="bi bi-hospital-fill fs-5 text-white"></i></div>
       <div class="sidebar-logo-text">
         <span class="sidebar-logo-title">{{ system_settings.hospital_name }}</span>
         <span class="sidebar-logo-subtitle">Kurumsal Platform</span>
@@ -119,9 +119,9 @@
 
           <!-- Bildirim listesi (JS tarafından doldurulur) -->
           <div id="notif-list" style="max-height:300px; overflow-y:auto;">
-            <div id="notif-loading" style="padding:24px; text-align:center; color:#a0aec0; font-size:13px;">
-              <div style="font-size:24px; margin-bottom:6px;">🔄</div>
-              Yükleniyor...
+            <div id="notif-loading" style="padding:28px 24px; text-align:center; color:#a0aec0; font-size:13px;">
+              <div class="spinner-border spinner-border-sm text-primary mb-2" role="status" style="width: 1.2rem; height: 1.2rem;"></div>
+              <div>Yükleniyor...</div>
             </div>
           </div>
 
