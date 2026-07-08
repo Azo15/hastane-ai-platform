@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Analiz ve Raporlar — {{ system_settings.hospital_name }}{% endblock %}
+{% block page_title %}Performans &amp; Raporlama{% endblock %}
+{% block breadcrumb %}Yönetici Paneli / Raporlar{% endblock %}
+
+{% block content %}
+<div class="page-header animate-in">
+  <div>
+    <h1 class="page-header-title">
+      <i class="bi bi-bar-chart-fill me-2" style="color:var(--primary);"></i>
+      Sistem <span class="text-gradient">Analiz Raporları</span>
+    </h1>
+    <p class="page-header-subtitle">
+      No-Show randevu risk tahminleri ve IT destek taleplerine ait gerçek zamanlı veri grafikleri ve analitiği.
+    </p>
+  </div>
+</div>
+
+<!-- ÜST İSTATİSTİK ÖZET KARTLARI -->
+<div class="row g-4 mb-4">
+  <!-- Toplam Ticket -->
+  <div class="col-xl-3 col-sm-6 animate-in">
+    <div class="card-modern px-4 py-3" style="border-top: 3px solid #3b82f6;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted" style="font-size:12px; font-weight:600; text-transform:uppercase;">Toplam Talep</div>
+          <h3 class="fw-bold mt-1 mb-0">{{ ticket_stats.total }}</h3>
+        </div>
+        <span class="fs-2 text-primary opacity-50"><i class="bi bi-ticket-perforated"></i></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Açık Bilet -->
+  <div class="col-xl-3 col-sm-6 animate-in">
+    <div class="card-modern px-4 py-3" style="border-top: 3px solid #ef4444;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted" style="font-size:12px; font-weight:600; text-transform:uppercase;">Açık Talepler</div>
+          <h3 class="fw-bold mt-1 mb-0 text-danger">{{ ticket_stats.open }}</h3>
+        </div>
+        <span class="fs-2 text-danger opacity-50"><i class="bi bi-exclamation-octagon"></i></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Çözülmüş Bilet -->
+  <div class="col-xl-3 col-sm-6 animate-in">
+    <div class="card-modern px-4 py-3" style="border-top: 3px solid #10b981;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted" style="font-size:12px; font-weight:600; text-transform:uppercase;">Çözülen Talepler</div>
+          <h3 class="fw-bold mt-1 mb-0 text-success">{{ ticket_stats.resolved }}</h3>
+        </div>
+        <span class="fs-2 text-success opacity-50"><i class="bi bi-patch-check"></i></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Çözüm Oranı -->
+  <div class="col-xl-3 col-sm-6 animate-in">
+    <div class="card-modern px-4 py-3" style="border-top: 3px solid #a855f7;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted" style="font-size:12px; font-weight:600; text-transform:uppercase;">Çözüm Oranı</div>
+          <h3 class="fw-bold mt-1 mb-0" style="color:#a855f7;">
+            {% if ticket_stats.total > 0 %}
+              %{{ ((ticket_stats.resolved / ticket_stats.total) * 100)|round(1) }}
+            {% else %}
+              %0
+            {% endif %}
+          </h3>
+        </div>
+        <span class="fs-2" style="color:#a855f7; opacity:0.5;"><i class="bi bi-percent"></i></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRAFİKLER SEKSİYONU -->
+<div class="row g-4">
+  
+  <!-- Randevu Risk Dağılımı (No-Show) -->
+  <div class="col-md-6 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-pie-chart" style="color:#3b82f6;"></i>
+          Randevu No-Show Risk Dağılımı
+        </span>
+      </div>
+      <div class="card-body p-4 d-flex justify-content-center align-items-center" style="min-height:300px;">
+        <div style="width: 280px; height: 280px;">
+          <canvas id="chartNoShow"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IT Destek Talepleri Dağılımı -->
+  <div class="col-md-6 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-circle-square" style="color:#10b981;"></i>
+          Destek Talepleri Durum Grafiği
+        </span>
+      </div>
+      <div class="card-body p-4 d-flex justify-content-center align-items-center" style="min-height:300px;">
+        <div style="width: 280px; height: 280px;">
+          <canvas id="chartTickets"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IT Bilet Kategori Dağılımı -->
+  <div class="col-md-6 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-bar-chart-steps" style="color:#f59e0b;"></i>
+          Taleplerin Konulara Göre Dağılımı
+        </span>
+      </div>
+      <div class="card-body p-4" style="min-height:320px;">
+        <canvas id="chartCategories" style="max-height: 280px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Haftalık Randevu Kaçırma Eğilimi -->
+  <div class="col-md-6 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-graph-up-arrow" style="color:#a855f7;"></i>
+          Haftalık Kaçırılan Randevu Trendi
+        </span>
+      </div>
+      <div class="card-body p-4" style="min-height:320px;">
+        <canvas id="chartTrend" style="max-height: 280px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // 1. Randevu No-Show Risk Dağılımı
+  const ctxNoShow = document.getElementById('chartNoShow').getContext('2d');
+  new Chart(ctxNoShow, {
+    type: 'pie',
+    data: {
+      labels: ['Düşük Risk', 'Orta Risk', 'Yüksek Risk'],
+      datasets: [{
+        data: [{{ no_show_stats.low_risk }}, {{ no_show_stats.medium_risk }}, {{ no_show_stats.high_risk }}],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // 2. Destek Talepleri Durum Grafiği
+  const ctxTickets = document.getElementById('chartTickets').getContext('2d');
+  new Chart(ctxTickets, {
+    type: 'doughnut',
+    data: {
+      labels: ['Açık', 'Çözüldü'],
+      datasets: [{
+        data: [{{ ticket_stats.open }}, {{ ticket_stats.resolved }}],
+        backgroundColor: ['#ef4444', '#10b981'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // 3. Kategorilere Göre Bilet Dağılımı
+  const ctxCategories = document.getElementById('chartCategories').getContext('2d');
+  new Chart(ctxCategories, {
+    type: 'bar',
+    data: {
+      labels: [{% for cat in categories.keys() %}'{{ cat }}',{% endfor %}],
+      datasets: [{
+        label: 'Talep Sayısı',
+        data: [{% for count in categories.values() %}{{ count }},{% endfor %}],
+        backgroundColor: '#3b82f6',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // 4. Haftalık Randevu Kaçırma Eğilimi (Mock verilerle trend çizelgesi)
+  const ctxTrend = document.getElementById('chartTrend').getContext('2d');
+  new Chart(ctxTrend, {
+    type: 'line',
+    data: {
+      labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
+      datasets: [{
+        label: 'Gerçekleşmeyen Randevu',
+        data: [12, 19, 11, 15, 23, 8, 4],
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointBackgroundColor: '#a855f7'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { borderDash: [5, 5] } }
+      }
+    }
+  });
+
+});
+</script>
+{% endblock %}
