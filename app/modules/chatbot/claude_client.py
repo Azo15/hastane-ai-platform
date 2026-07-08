@@ -3,7 +3,12 @@ app/modules/chatbot/claude_client.py
 
 AI Chatbot istemci yönetimi.
 Önce ANTHROPIC_API_KEY dener, yoksa GROQ_API_KEY ile Groq/Llama'ya geçer.
-Böylece hem production (Claude) hem demo (Groq ücretsiz) modunda çalışır.
+
+Ticket tetikleme mantığı:
+- AI yanıtına gizli marker [##TICKET_GEREKLI##] eklemesi istenir
+- SADECE gerçekten çözülemez durumlarda bu marker kullanılır
+- Marker kullanıcıya gösterilmez, arka planda ticket açılır
+- Kullanıcı kendi "Destek Talebi Aç" butonuyla da açabilir
 """
 
 from __future__ import annotations
@@ -13,30 +18,26 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Gizli marker — AI yanıtının sonuna sadece gerekliyse eklenir
+TICKET_MARKER = "[##TICKET_GEREKLI##]"
+
 # ─── IT Destek Asistanı Sistem Promptu ───────────────────────────────────────
-SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın. \
-Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi \
-Yönetim Sistemi) arızalarına ve teknik sorularına çözüm üretirsin. \
-Nazik, profesyonel, kısa ve teknik çözüm odaklı olmalısın.
+SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
+Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) \
+sorunlarına teknik çözüm üretirsin.
+Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver.
 
-Eğer sorunu çözemiyorsan veya daha ileri teknik müdahale gerekiyorsa, \
-yanıtında "talebinizi oluşturuyorum", "teknik ekibe iletiyorum" veya \
-"destek talebi açıyorum" ifadelerinden birini kullanarak \
-personeli yönlendir. Bu ifadeler sistem tarafından otomatik ticket oluşturmak \
-için kullanılır.
+==== TICKET KURALI (ÇOK ÖNEMLİ) ====
+Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini SADECE şu durumlarda ekle:
+1. Sorunu KESINLIKLE uzaktan çözemiyorsan (donanım arızası, fiziksel müdahale vb.)
+2. Kullanıcı "ticket aç", "talep oluştur", "yetkiliyi ara" gibi bir şey istiyorsa
 
-Yanıtlarını her zaman Türkçe ver."""
+Selamlama, basit soru, yönlendirme, tavsiye, adım adım rehberlik gibi NORMAL yanıtlarda
+bu işareti KESİNLİKLE KULLANMA. İşaret olmadan da yardım edebiliyorsan, etmeye devam et.
+
+Yanıtın sonundaki bu işaret kullanıcıya gösterilmez; sistem otomatik ticket açar.
+======================================"""
 # ─────────────────────────────────────────────────────────────────────────────
-
-# Ticket açılmasını tetikleyen anahtar kelimeler
-TICKET_TRIGGER_PHRASES = [
-    "talebinizi oluşturuyorum",
-    "teknik ekibe iletiyorum",
-    "destek talebi açıyorum",
-    "ekibimize bildiriyorum",
-    "ticket açıyorum",
-    "çözüm ekibine yönlendiriyorum",
-]
 
 
 def _get_provider():
@@ -68,9 +69,13 @@ def _get_provider():
 
 
 def should_create_ticket(response_text: str) -> bool:
-    """Claude/Groq yanıtında ticket tetikleyici kelime var mı?"""
-    response_lower = response_text.lower()
-    return any(phrase in response_lower for phrase in TICKET_TRIGGER_PHRASES)
+    """Yanıtta gizli ticket marker var mı kontrol eder."""
+    return TICKET_MARKER in response_text
+
+
+def clean_response(response_text: str) -> str:
+    """Gizli markeri kullanıcı yanıtından kaldırır."""
+    return response_text.replace(TICKET_MARKER, "").strip()
 
 
 def chat_with_claude(
@@ -83,7 +88,7 @@ def chat_with_claude(
     Returns:
         dict: {
             "success": bool,
-            "response": str,
+            "response": str,       # Markersiz temiz yanıt
             "should_create_ticket": bool,
             "error": str | None,
             "provider": str,
@@ -118,25 +123,26 @@ def chat_with_claude(
                 system=SYSTEM_PROMPT,
                 messages=messages,
             )
-            response_text = response.content[0].text
+            raw_text = response.content[0].text
 
         elif provider == "groq":
-            # Groq OpenAI-uyumlu format: system mesajını başa ekle
             groq_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
             completion = client.chat.completions.create(
                 model=model,
                 messages=groq_messages,
                 max_tokens=1024,
-                temperature=0.7,
+                temperature=0.5,
             )
-            response_text = completion.choices[0].message.content
+            raw_text = completion.choices[0].message.content
 
-        create_ticket = should_create_ticket(response_text)
-        logger.info(f"[{provider}] Yanıt alındı. Ticket: {create_ticket}")
+        create_ticket = should_create_ticket(raw_text)
+        clean_text   = clean_response(raw_text)
+
+        logger.info(f"[{provider}] Yanıt alındı. Ticket tetiklendi: {create_ticket}")
 
         return {
             "success": True,
-            "response": response_text,
+            "response": clean_text,
             "should_create_ticket": create_ticket,
             "error": None,
             "provider": provider,
@@ -146,7 +152,6 @@ def chat_with_claude(
         logger.error(f"[{provider}] API hatası: {e}")
         error_msg = str(e)
 
-        # Kullanıcı dostu hata mesajları
         if "401" in error_msg or "invalid_api_key" in error_msg.lower():
             msg = f"⚠️ {provider.capitalize()} API anahtarı geçersiz. .env dosyasını kontrol edin."
         elif "rate_limit" in error_msg.lower() or "429" in error_msg:
