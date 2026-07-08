@@ -251,6 +251,119 @@ async function initNotifications() {
 // Sayfa yüklenince bildirimleri çek
 document.addEventListener("DOMContentLoaded", initNotifications);
 
+// ─── Destek Talebi Detay Modalı Gösterimi ──────────────────────────────────
+async function showTicketDetails(ticketId) {
+  let ticket = (window.allLoadedTickets || []).find(t => t.id === ticketId);
+
+  // Küreselde yoksa sunucudan çek
+  if (!ticket) {
+    try {
+      const resp = await fetch("/chatbot/tickets");
+      if (resp.ok) {
+        const data = await resp.json();
+        window.allLoadedTickets = data.tickets || [];
+        ticket = window.allLoadedTickets.find(t => t.id === ticketId);
+      }
+    } catch (e) {
+      console.error("Talep detay yükleme hatası:", e);
+    }
+  }
+
+  if (!ticket) {
+    showToast("⚠️ Talebe ait detaylar bulunamadı.", "error");
+    return;
+  }
+
+  // Modalı doldur
+  document.getElementById("modal-ticket-id").textContent = `Talep #${ticket.id}`;
+  
+  const statusBadge = document.getElementById("modal-ticket-status");
+  if (ticket.status === "Açık") {
+    statusBadge.textContent = "🔴 Açık Destek Talebi";
+    statusBadge.style.background = "#fee2e2";
+    statusBadge.style.color = "#b91c1c";
+  } else {
+    statusBadge.textContent = "✅ Çözüldü / Kapatıldı";
+    statusBadge.style.background = "#dcfce7";
+    statusBadge.style.color = "#15803d";
+  }
+
+  document.getElementById("modal-ticket-desc").textContent = ticket.problem_description || "Açıklama yok.";
+  
+  const userMsgContainer = document.getElementById("modal-user-msg-container");
+  const userMsgEl = document.getElementById("modal-user-msg");
+  if (ticket.user_message) {
+    userMsgContainer.style.display = "block";
+    userMsgEl.textContent = ticket.user_message;
+  } else {
+    userMsgContainer.style.display = "none";
+  }
+
+  const aiRespContainer = document.getElementById("modal-ai-resp-container");
+  const aiRespEl = document.getElementById("modal-ai-resp");
+  if (ticket.ai_response) {
+    aiRespContainer.style.display = "block";
+    aiRespEl.textContent = ticket.ai_response;
+  } else {
+    aiRespContainer.style.display = "none";
+  }
+
+  document.getElementById("modal-ticket-date").textContent = ticket.date_created || "";
+
+  // Talebi Kapat butonu aksiyonu
+  const actionBtn = document.getElementById("modal-ticket-action-btn");
+  if (ticket.status === "Açık") {
+    actionBtn.style.display = "block";
+    actionBtn.onclick = async () => {
+      actionBtn.disabled = true;
+      actionBtn.textContent = "Kapatılıyor...";
+      try {
+        const resp = await fetch(`/chatbot/ticket/${ticket.id}/close`, { method: "POST" });
+        const resData = await resp.json();
+        if (resData.success) {
+          statusBadge.textContent = "✅ Çözüldü / Kapatıldı";
+          statusBadge.style.background = "#dcfce7";
+          statusBadge.style.color = "#15803d";
+          actionBtn.style.display = "none";
+          showToast("✓ Destek talebi başarıyla kapatıldı.", "success");
+          
+          // Chatbot sayfasındaki tabloyu anlık güncelle
+          const row = document.getElementById(`ticket-row-${ticket.id}`);
+          if (row) {
+            const tableBadge = row.querySelector(".ticket-status-badge");
+            if (tableBadge) {
+              tableBadge.className = "ticket-status-badge ticket-status-closed";
+              tableBadge.innerHTML = "✅ Çözüldü";
+            }
+            const closeBtn = row.querySelector(".btn-danger-modern");
+            if (closeBtn) closeBtn.replaceWith(document.createTextNode("—"));
+          }
+          
+          // Bildirim panelini yenile
+          initNotifications();
+          
+          // Sayfa sayacını güncelle (eğer chatbot sayfasındaysa)
+          if (typeof updateTicketCount === "function") {
+            updateTicketCount();
+          }
+        }
+      } catch (err) {
+        showToast("⚠️ İşlem sırasında bir hata oluştu.", "error");
+        console.error(err);
+      } finally {
+        actionBtn.disabled = false;
+        actionBtn.textContent = "✓ Talebi Kapat";
+      }
+    };
+  } else {
+    actionBtn.style.display = "none";
+  }
+
+  // Modalı göster
+  const modalEl = document.getElementById("ticketDetailModal");
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
 
 // ─── Saat Güncelleyici ────────────────────────────────────────────────────
 function updateClock() {
