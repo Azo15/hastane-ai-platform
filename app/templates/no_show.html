@@ -77,10 +77,10 @@
             <div class="d-flex flex-wrap gap-2">
 
               {% set checks = [
-                ('hipertension', 'Hipertansiyon', '🫀'),
-                ('diabetes',     'Diyabet',       '💉'),
-                ('alcoholism',   'Alkol',         '🍺'),
-                ('handcap',      'Engellilik',    '♿'),
+                ('hipertension', 'Hipertansiyon', 'bi bi-activity text-danger'),
+                ('diabetes',     'Diyabet',       'bi bi-droplet-fill text-danger'),
+                ('alcoholism',   'Alkol',         'bi bi-cup-straw-fill text-warning'),
+                ('handcap',      'Engellilik',    'bi bi-universal-access text-primary'),
               ] %}
 
               {% for name, label, icon in checks %}
@@ -97,8 +97,8 @@
                 <input class="form-check-input" type="checkbox" name="{{ name }}" 
                        id="{{ name }}" value="1"
                        {% if form_data and form_data.get(name) %}checked{% endif %} />
-                <label class="form-check-label fw-medium" for="{{ name }}" style="cursor:pointer;">
-                  {{ icon }} {{ label }}
+                <label class="form-check-label fw-medium" for="{{ name }}" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                  <i class="{{ icon }}"></i> {{ label }}
                 </label>
               </div>
               {% endfor %}
@@ -122,8 +122,8 @@
               <input class="form-check-input" type="checkbox" name="sms_received"
                      id="sms_received" value="1"
                      {% if form_data and form_data.get('sms_received') %}checked{% endif %} />
-              <label class="form-check-label fw-medium" for="sms_received" style="cursor:pointer;">
-                📱 SMS Hatırlatması Gönderildi
+              <label class="form-check-label fw-medium" for="sms_received" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <i class="bi bi-chat-text-fill text-primary"></i> SMS Hatırlatması Gönderildi
               </label>
             </div>
           </div>
@@ -158,13 +158,13 @@
 
         <!-- Detaylar -->
         <div class="flex-grow-1">
-          <h4 style="font-family:'Outfit',sans-serif; font-weight:700; margin-bottom:4px;">
+          <h4 style="font-family:'Outfit',sans-serif; font-weight:700; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
             {% if prediction_result.risk_color == 'success' %}
-              ✅ Düşük No-Show Riski
+              <i class="bi bi-check-circle-fill text-success"></i> Düşük No-Show Riski
             {% elif prediction_result.risk_color == 'warning' %}
-              ⚠️ Orta No-Show Riski
+              <i class="bi bi-exclamation-triangle-fill text-warning"></i> Orta No-Show Riski
             {% else %}
-              🔴 Yüksek No-Show Riski
+              <i class="bi bi-exclamation-octagon-fill text-danger"></i> Yüksek No-Show Riski
             {% endif %}
           </h4>
           <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
@@ -188,11 +188,11 @@
               font-size: 13px;
           ">
             {% if prediction_result.risk_color == 'success' %}
-              💡 <strong>Öneri:</strong> Standart randevu sürecine devam edilebilir. Ek müdahale gerekmemektedir.
+              <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> Standart randevu sürecine devam edilebilir. Ek müdahale gerekmemektedir.
             {% elif prediction_result.risk_color == 'warning' %}
-              💡 <strong>Öneri:</strong> SMS hatırlatması yapılması ve randevu günü tekrar aranması önerilir.
+              <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> SMS hatırlatması yapılması ve randevu günü tekrar aranması önerilir.
             {% else %}
-              💡 <strong>Öneri:</strong> Randevu günü sabahı hasta aranmalı, alternatif slot planlanmalı ve randevu hatırlatma katmanı artırılmalıdır.
+              <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> Randevu günü sabahı hasta aranmalı, alternatif slot planlanmalı ve randevu hatırlatma katmanı artırılmalıdır.
             {% endif %}
           </div>
         </div>
@@ -257,12 +257,12 @@
               </td>
               <td>
                 {% if apt.risk_skoru >= 80 %}
-                  <span class="risk-score-pill" style="background:#fee2e2; color:#b91c1c;">
-                    🔴 %{{ apt.risk_skoru }}
+                  <span class="risk-score-pill" style="background:#fee2e2; color:#b91c1c; display:inline-flex; align-items:center; gap:4px;">
+                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_skoru }}
                   </span>
                 {% elif apt.risk_skoru >= 70 %}
-                  <span class="risk-score-pill" style="background:#fff3cd; color:#92400e;">
-                    🟡 %{{ apt.risk_skoru }}
+                  <span class="risk-score-pill" style="background:#fff3cd; color:#92400e; display:inline-flex; align-items:center; gap:4px;">
+                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_skoru }}
                   </span>
                 {% endif %}
               </td>
@@ -273,9 +273,13 @@
               </td>
               <td>
                 {% if apt.sms_gonderildi == 'Evet' %}
-                  <span style="color:#22c55e; font-size:13px;">✓ Gönderildi</span>
+                  <span class="text-success fw-medium" style="font-size:13px; display:inline-flex; align-items:center; gap:4px;">
+                    <i class="bi bi-check-circle-fill"></i> Gönderildi
+                  </span>
                 {% else %}
-                  <span style="color:#ef4444; font-size:13px;">✗ Gönderilmedi</span>
+                  <span class="text-danger fw-medium" style="font-size:13px; display:inline-flex; align-items:center; gap:4px;">
+                    <i class="bi bi-x-circle-fill"></i> Gönderilmedi
+                  </span>
                 {% endif %}
               </td>
             </tr>
