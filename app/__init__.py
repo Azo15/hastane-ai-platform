@@ -33,8 +33,13 @@ def create_app():
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
 
     # Ana sayfa rotasını kayıt et
-    from .main_routes import main_bp
+    from .main_routes import main_bp, load_settings
     app.register_blueprint(main_bp)
+
+    # Şablonlarda dinamik hastane adını göstermek için global ayar enjektörü
+    @app.context_processor
+    def inject_settings():
+        return dict(system_settings=load_settings())
 
     # Veritabanı tablolarını oluştur
     with app.app_context():
