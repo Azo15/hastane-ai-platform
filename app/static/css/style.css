@@ -363,6 +363,7 @@ body {
   transition: all var(--transition);
   position: relative;
   overflow: hidden;
+  height: 100%;
 }
 
 .stat-card::before {
