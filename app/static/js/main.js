@@ -37,6 +37,75 @@ function markRead(el) {
 }
 
 
+// ─── Bildirim Paneline Yeni Bildirim Ekle ─────────────────────────────────
+function addNotification(ticket, type = "ticket") {
+  const list  = document.getElementById("notif-list");
+  const badge = document.getElementById("notif-count-badge");
+  const dot   = document.getElementById("notif-dot");
+  if (!list) return;
+
+  // Zaman etiketi
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const timeStr = `Bugün ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // İkon ve başlık seçimi
+  let icon  = "🎫";
+  let title = `Yeni Destek Talebi #${ticket.id}`;
+  let desc  = ticket.problem_description
+    ? ticket.problem_description.substring(0, 60) + (ticket.problem_description.length > 60 ? "..." : "")
+    : "Yeni ticket oluşturuldu.";
+
+  if (type === "auto") {
+    icon  = "🤖";
+    title = `Otomatik Ticket #${ticket.id} Oluşturuldu`;
+  }
+
+  // Bildirim elementi
+  const el = document.createElement("div");
+  el.className = "notif-item unread";
+  el.setAttribute("onclick", "markRead(this)");
+  el.style.cssText = [
+    "padding:12px 18px",
+    "border-bottom:1px solid #f1f5f9",
+    "cursor:pointer",
+    "background:#eff6ff",
+    "transition:background 0.2s",
+    "display:flex",
+    "gap:12px",
+    "align-items:flex-start",
+    "animation:slideInRight 0.3s ease",
+  ].join(";");
+
+  el.innerHTML = `
+    <span style="font-size:20px;margin-top:2px;">${icon}</span>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#1a202c;">${title}</div>
+      <div style="font-size:12px;color:#718096;margin-top:2px;">${desc}</div>
+      <div style="font-size:11px;color:#a0aec0;margin-top:3px;">${timeStr}</div>
+    </div>
+  `;
+
+  // En üste ekle
+  list.insertBefore(el, list.firstChild);
+
+  // Sayacı artır
+  if (badge) {
+    const current = parseInt(badge.textContent) || 0;
+    badge.textContent = current + 1;
+    badge.style.display = "";
+  }
+  if (dot) dot.style.display = "";
+
+  // Çanı hafifçe salla (animasyon)
+  const bellIcon = document.querySelector("#notif-btn .bi-bell-fill");
+  if (bellIcon) {
+    bellIcon.style.animation = "none";
+    bellIcon.offsetHeight; // reflow
+    bellIcon.style.animation = "bell-shake 0.5s ease";
+  }
+}
+
 // ─── Saat Güncelleyici ────────────────────────────────────────────────────
 function updateClock() {
   const el = document.getElementById("current-time");
@@ -285,6 +354,10 @@ function addTicketToTable(ticket) {
 
   // En üste ekle
   ticketListBody.insertBefore(tr, ticketListBody.firstChild);
+
+  // Bildirim çanına da ekle
+  const isAuto = ticket.problem_description && ticket.problem_description.startsWith("Otomatik");
+  addNotification(ticket, isAuto ? "auto" : "ticket");
 }
 
 // ─── Ticket Kapatma ───────────────────────────────────────────────────────

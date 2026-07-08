@@ -916,6 +916,15 @@ body {
   to   { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes bell-shake {
+  0%  { transform: rotate(0deg); }
+  20% { transform: rotate(-20deg); }
+  40% { transform: rotate(20deg); }
+  60% { transform: rotate(-15deg); }
+  80% { transform: rotate(10deg); }
+  100%{ transform: rotate(0deg); }
+}
+
 @keyframes typing {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30%           { transform: translateY(-6px); opacity: 1; }
