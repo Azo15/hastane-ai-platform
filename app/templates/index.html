@@ -11,7 +11,7 @@
 <div class="page-header animate-in">
   <div>
     <h1 class="page-header-title">
-      🏥 Hastane <span class="text-gradient">AI Platformu</span>
+      <i class="bi bi-hospital text-primary me-2"></i>Hastane <span class="text-gradient">AI Platformu</span>
     </h1>
     <p class="page-header-subtitle">
       Yapay zeka destekli randevu yönetimi ve IT destek sistemi — Tüm süreçler tek panelde.
@@ -29,13 +29,16 @@
 
 <!-- ═══════════════════════════════════════════════════════════════════
      İSTATİSTİK KARTLARI
+     Tüm kartların yükseklikleri eşittir (height: 100%).
 ═══════════════════════════════════════════════════════════════════ -->
 <div class="row g-3 mb-4">
 
   <!-- Toplam Randevu -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #1a73e8;">
-      <div class="stat-card-icon" style="background:#e8f0fe;">📅</div>
+      <div class="stat-card-icon" style="background:#e8f0fe;">
+        <i class="bi bi-calendar-check text-primary fs-4"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value">{{ stats.total_appointments }}</div>
         <div class="stat-card-label">Bu Hafta Randevu</div>
@@ -49,7 +52,9 @@
   <!-- Yüksek Riskli -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #ef4444;">
-      <div class="stat-card-icon" style="background:#fee2e2;">⚠️</div>
+      <div class="stat-card-icon" style="background:#fee2e2;">
+        <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#ef4444;">{{ stats.high_risk_count }}</div>
         <div class="stat-card-label">Yüksek Risk (&gt;70%)</div>
@@ -63,7 +68,9 @@
   <!-- No-Show Oranı -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #f59e0b;">
-      <div class="stat-card-icon" style="background:#fef9c3;">📊</div>
+      <div class="stat-card-icon" style="background:#fef9c3;">
+        <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#f59e0b;">%{{ stats.no_show_rate }}</div>
         <div class="stat-card-label">No-Show Oranı</div>
@@ -77,7 +84,9 @@
   <!-- AI Doğruluk -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #8b5cf6;">
-      <div class="stat-card-icon" style="background:#ede9fe;">🧠</div>
+      <div class="stat-card-icon" style="background:#ede9fe;">
+        <i class="bi bi-cpu text-info fs-4" style="color:#8b5cf6 !important;"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#8b5cf6;">%{{ stats.ai_accuracy }}</div>
         <div class="stat-card-label">AI Model Doğruluğu</div>
@@ -91,7 +100,9 @@
   <!-- Açık Ticket -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #ef4444;">
-      <div class="stat-card-icon" style="background:#fee2e2;">🎫</div>
+      <div class="stat-card-icon" style="background:#fee2e2;">
+        <i class="bi bi-ticket-perforated text-danger fs-4"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#ef4444;">{{ stats.open_tickets }}</div>
         <div class="stat-card-label">Açık IT Ticket</div>
@@ -105,7 +116,9 @@
   <!-- Çözülen Ticket -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
     <div class="stat-card" style="--stat-color: #22c55e;">
-      <div class="stat-card-icon" style="background:#dcfce7;">✅</div>
+      <div class="stat-card-icon" style="background:#dcfce7;">
+        <i class="bi bi-patch-check text-success fs-4"></i>
+      </div>
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#22c55e;">{{ stats.resolved_tickets }}</div>
         <div class="stat-card-label">Çözülen Ticket</div>
@@ -127,8 +140,8 @@
   <div class="col-lg-6 animate-in">
     <div class="card-modern h-100">
       <div class="card-header-modern">
-        <span class="card-title-modern">
-          <span style="font-size:20px;">🗓️</span>
+        <span class="card-title-modern" style="display:flex; align-items:center;">
+          <i class="bi bi-calendar-event text-primary fs-5 me-2"></i>
           No-Show Tahmin Modülü
         </span>
         <span class="badge bg-primary-subtle text-primary rounded-pill fw-semibold" style="font-size:11px;">LightGBM</span>
@@ -143,19 +156,19 @@
         <!-- Özellik listesi -->
         <div class="d-flex flex-column gap-2 mb-4">
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>Gerçek zamanlı risk skoru hesaplama</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>Renk kodlu risk sınıflandırması (Düşük / Orta / Yüksek)</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>Haftalık yüksek riskli randevu dashboard'u</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>LightGBM tabanlı makine öğrenmesi modeli</span>
           </div>
         </div>
@@ -178,34 +191,34 @@
   <div class="col-lg-6 animate-in">
     <div class="card-modern h-100">
       <div class="card-header-modern">
-        <span class="card-title-modern">
-          <span style="font-size:20px;">🤖</span>
-          IT Destek & Akıllı Chatbot
+        <span class="card-title-modern" style="display:flex; align-items:center;">
+          <i class="bi bi-robot text-purple fs-5 me-2" style="color:#7c3aed;"></i>
+          IT Destek &amp; Akıllı Chatbot
         </span>
-        <span class="badge rounded-pill fw-semibold" style="font-size:11px; background:#f0e8ff; color:#7c3aed;">Claude AI</span>
+        <span class="badge rounded-pill fw-semibold" style="font-size:11px; background:#f0e8ff; color:#7c3aed;">Llama 3.3 / Groq</span>
       </div>
       <div class="card-body-modern">
         <p style="font-size:13.5px; color: var(--text-secondary); line-height:1.7; margin-bottom:20px;">
-          Anthropic Claude yapay zekası tarafından desteklenen hastane IT destek asistanı.
+          Yapay zeka altyapısı tarafından desteklenen hastane IT destek asistanı.
           Bilgisayar, yazıcı, ağ ve <strong>HBYS arızalarına</strong> anında çözüm üretir.
           Çözülemeyen sorunlar için <strong>otomatik ticket sistemi</strong> devreye girer.
         </p>
 
         <div class="d-flex flex-column gap-2 mb-4">
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
-            <span>Anthropic Claude 3.5 Haiku destekli AI asistan</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
+            <span>Yapay Zeka destekli IT destek asistanı</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>Otomatik destek talebi (ticket) oluşturma</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>SQLite ile kalıcı ticket kaydı</span>
           </div>
           <div class="d-flex align-items-center gap-2" style="font-size:13px;">
-            <span style="color:#22c55e;">✓</span>
+            <i class="bi bi-check2-circle text-success" style="font-size:14px;"></i>
             <span>Canlı ticket durumu takibi ve kapatma</span>
           </div>
         </div>
