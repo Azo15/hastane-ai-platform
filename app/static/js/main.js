@@ -6,7 +6,8 @@
 "use strict";
 
 // ─── Global Sohbet Geçmişi ────────────────────────────────────────────────
-const conversationHistory = [];
+window.currentConversationId = null;
+let conversationHistory = [];
 
 // ─── DOM Referansları ─────────────────────────────────────────────────────
 const chatMessages   = document.getElementById("chat-messages");
@@ -508,6 +509,9 @@ async function sendMessage() {
       appendMessage("assistant", data.response);
       conversationHistory.push({ role: "assistant", content: data.response });
 
+      // Konuşmayı veritabanına otomatik kaydet/güncelle
+      await autoSaveConversation();
+
       // Otomatik ticket oluşturuldu mu?
       if (data.ticket_created && data.ticket) {
         showToast(
@@ -801,7 +805,159 @@ function clearChat() {
     `;
   }
 
-  showToast("Sohbet geçmişi temizlendi.", "success");
+  showToast("Sohbet geçmişi sıfırlandı.", "success");
+}
+
+// ─── Yeni Sohbet Başlatma ───────────────────────────────────────────────────
+function startNewChat() {
+  window.currentConversationId = null;
+  conversationHistory = [];
+  
+  if (chatMessages) {
+    chatMessages.innerHTML = `
+      <div class="message-wrapper">
+        <div class="message-avatar ai" style="display:inline-flex; align-items:center; justify-content:center;">
+          <i class="bi bi-robot text-white" style="font-size: 14px;"></i>
+        </div>
+        <div>
+          <div class="message-bubble ai">
+            Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
+            Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
+            yaşadığınız sorunları benimle paylaşabilirsiniz. 
+            Size en hızlı çözümü sunmaya çalışacağım.<br><br>
+            Nasıl yardımcı olabilirim?
+          </div>
+          <div class="message-time">Şimdi</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Sol menüdeki aktif seçimi temizle
+  document.querySelectorAll(".history-item").forEach(el => el.classList.remove("active"));
+  
+  if (chatInput) chatInput.focus();
+}
+
+// ─── Otomatik Sohbet Geçmişi Kaydı (AJAX) ──────────────────────────────────
+async function autoSaveConversation() {
+  if (conversationHistory.length === 0) return;
+  try {
+    const response = await fetch("/chatbot/conversation/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversation_id: window.currentConversationId,
+        messages: conversationHistory
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      const isNew = !window.currentConversationId;
+      window.currentConversationId = data.conversation_id;
+      
+      // Sidebar listesini güncelle
+      updateHistorySidebarUI(data.conversation_id, data.title, isNew);
+    }
+  } catch (e) {
+    console.warn("Otomatik sohbet kaydı başarısız oldu:", e);
+  }
+}
+
+// ─── Geçmiş Listesi Arayüzünü Güncelleme ─────────────────────────────────────
+function updateHistorySidebarUI(id, title, isNew) {
+  const list = document.getElementById("chat-history-list");
+  if (!list) return;
+
+  const noHistoryMsg = document.getElementById("no-history-msg");
+  if (noHistoryMsg) noHistoryMsg.remove();
+
+  if (isNew) {
+    const div = document.createElement("div");
+    div.className = "history-item active";
+    div.id = `history-item-${id}`;
+    div.setAttribute("onclick", `loadConversation(${id})`);
+    div.innerHTML = `
+      <span class="history-title" id="history-title-${id}">${escapeHtml(title)}</span>
+      <button class="delete-history-btn" onclick="deleteConversation(${id}, event)">
+        <i class="bi bi-x"></i>
+      </button>
+    `;
+    list.insertBefore(div, list.firstChild);
+  } else {
+    const titleEl = document.getElementById(`history-title-${id}`);
+    if (titleEl) {
+      titleEl.textContent = title;
+    }
+    document.querySelectorAll(".history-item").forEach(el => el.classList.remove("active"));
+    const currentItem = document.getElementById(`history-item-${id}`);
+    if (currentItem) {
+      currentItem.classList.add("active");
+    }
+  }
+}
+
+// ─── Geçmiş Konuşmayı Yükleme ──────────────────────────────────────────────
+async function loadConversation(id) {
+  try {
+    const resp = await fetch("/chatbot/conversations");
+    const data = await resp.json();
+    if (data.success) {
+      const conv = data.conversations.find(c => c.id === id);
+      if (conv) {
+        window.currentConversationId = id;
+        conversationHistory = conv.messages || [];
+
+        if (chatMessages) {
+          chatMessages.innerHTML = "";
+          conversationHistory.forEach(msg => {
+            appendMessage(msg.role === "user" ? "user" : "assistant", msg.content);
+          });
+        }
+
+        document.querySelectorAll(".history-item").forEach(el => el.classList.remove("active"));
+        const currentItem = document.getElementById(`history-item-${id}`);
+        if (currentItem) {
+          currentItem.classList.add("active");
+        }
+        showToast("Konuşma başarıyla yüklendi.", "success");
+      }
+    }
+  } catch (error) {
+    console.error("Konuşma yüklenirken hata:", error);
+    showToast("Sohbet geçmişi yüklenemedi.", "error");
+  }
+}
+
+// ─── Geçmiş Konuşmayı Silme ────────────────────────────────────────────────
+async function deleteConversation(id, event) {
+  if (event) event.stopPropagation();
+
+  if (!confirm("Bu konuşmayı kalıcı olarak silmek istediğinize emin misiniz?")) return;
+
+  try {
+    const resp = await fetch(`/chatbot/conversation/${id}/delete`, {
+      method: "DELETE"
+    });
+    const data = await resp.json();
+    if (data.success) {
+      const el = document.getElementById(`history-item-${id}`);
+      if (el) el.remove();
+
+      if (window.currentConversationId === id) {
+        startNewChat();
+      }
+
+      const list = document.getElementById("chat-history-list");
+      if (list && list.querySelectorAll(".history-item").length === 0) {
+        list.innerHTML = `<div id="no-history-msg" style="font-size: 11px; color: var(--text-muted); text-align: center; padding-top: 20px;">Geçmiş yok.</div>`;
+      }
+      showToast("Sohbet silindi.", "success");
+    }
+  } catch (error) {
+    console.error("Sohbet silinirken hata:", error);
+    showToast("Sohbet silinemedi.", "error");
+  }
 }
 
 // ─── Raporları PDF veya Excel (CSV) Olarak Çıkarma ─────────────────────────

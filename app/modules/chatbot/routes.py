@@ -8,22 +8,26 @@ app/modules/chatbot/routes.py — IT Destek Chatbot Rotaları
 /chatbot/ticket/<id>/close → POST: Ticket'ı kapat
 """
 
-from __future__ import annotations
 from datetime import datetime
-from typing import Optional
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, session
 from . import chatbot_bp
 from .claude_client import chat_with_claude
-from ...database import db, Ticket
+from ...database import db, Ticket, Conversation
 
 
 @chatbot_bp.route("/", methods=["GET"])
 def index():
-    """Chat arayüzü ve aktif ticket listesi."""
-    tickets = (
-        Ticket.query.order_by(Ticket.date_created.desc()).limit(20).all()
-    )
-    return render_template("chatbot.html", tickets=tickets)
+    """Chat arayüzü ve aktif ticket listesi. Rol bazlı filtreleme yapılır."""
+    username = session.get("username", "admin")
+    role = session.get("user_role_code", "admin")
+
+    if role == "admin":
+        tickets = Ticket.query.order_by(Ticket.date_created.desc()).limit(20).all()
+    else:
+        tickets = Ticket.query.filter_by(created_by=username).order_by(Ticket.date_created.desc()).limit(20).all()
+
+    conversations = Conversation.query.filter_by(username=username).order_by(Conversation.date_created.desc()).all()
+    return render_template("chatbot.html", tickets=tickets, conversations=conversations)
 
 
 @chatbot_bp.route("/send", methods=["POST"])
@@ -31,20 +35,6 @@ def send_message():
     """
     Kullanıcının mesajını Claude'a iletir.
     Yanıtta ticket tetikleyici varsa otomatik SQLite kaydı oluşturur.
-
-    Request JSON:
-        {
-            "message": "Yazıcım bağlantı vermiyor",
-            "history": [...]  # Opsiyonel sohbet geçmişi
-        }
-
-    Response JSON:
-        {
-            "success": bool,
-            "response": str,
-            "ticket_created": bool,
-            "ticket": {...} | null,
-        }
     """
     data = request.get_json()
     if not data or "message" not in data:
@@ -52,6 +42,7 @@ def send_message():
 
     user_message = data.get("message", "").strip()
     conversation_history = data.get("history", [])
+    username = session.get("username", "admin")
 
     if not user_message:
         return jsonify({"success": False, "error": "Mesaj boş olamaz."}), 400
@@ -66,6 +57,7 @@ def send_message():
             problem_description=f"Otomatik oluşturuldu — {user_message[:200]}",
             user_message=user_message,
             ai_response=claude_result["response"],
+            created_by=username
         )
         ticket_data = ticket.to_dict() if ticket else None
 
@@ -81,27 +73,20 @@ def send_message():
 
 @chatbot_bp.route("/create-ticket", methods=["POST"])
 def create_ticket_manual():
-    """
-    Kullanıcı "Destek Talebi (Ticket) Aç" butonuna tıkladığında
-    manuel olarak ticket oluşturur.
-
-    Request JSON:
-        {
-            "description": "Sorun açıklaması",
-            "user_message": "Kullanıcı mesajı"  # Opsiyonel
-        }
-    """
+    """Manuel olarak bilet oluşturur. Bilete oluşturan kullanıcı atanır."""
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "error": "Veri gönderilmedi."}), 400
 
     description = data.get("description", "Manuel destek talebi").strip()
     user_message = data.get("user_message", "")
+    username = session.get("username", "admin")
 
     ticket = _create_ticket(
         problem_description=description,
         user_message=user_message,
         ai_response=None,
+        created_by=username
     )
 
     if ticket:
@@ -118,8 +103,15 @@ def create_ticket_manual():
 
 @chatbot_bp.route("/tickets", methods=["GET"])
 def get_tickets():
-    """Tüm aktif ve kapalı ticketları JSON olarak döndürür."""
-    tickets = Ticket.query.order_by(Ticket.date_created.desc()).all()
+    """Tüm aktif ve kapalı ticketları JSON olarak döndürür. Rol bazlı filtreleme uygulanır."""
+    username = session.get("username", "admin")
+    role = session.get("user_role_code", "admin")
+
+    if role == "admin":
+        tickets = Ticket.query.order_by(Ticket.date_created.desc()).all()
+    else:
+        tickets = Ticket.query.filter_by(created_by=username).order_by(Ticket.date_created.desc()).all()
+
     return jsonify(
         {
             "success": True,
@@ -145,19 +137,73 @@ def close_ticket(ticket_id: int):
     )
 
 
+# ─── GEÇMİŞ KONUŞMA ROTALARI ──────────────────────────────────────────────────
+
+@chatbot_bp.route("/conversation/save", methods=["POST"])
+def save_conversation():
+    """Aktif konuşma geçmişini veritabanına kaydeder."""
+    import json
+    data = request.get_json() or {}
+    username = session.get("username", "admin")
+    conv_id = data.get("conversation_id")
+    messages = data.get("messages", [])
+
+    if not messages:
+        return jsonify({"success": False, "error": "Boş sohbet kaydedilemez."})
+
+    # İlk kullanıcı mesajının içeriğini başlık yapalım
+    user_msgs = [m for m in messages if m.get("role") == "user"]
+    first_user_content = user_msgs[0].get("content", "Yeni Konuşma") if user_msgs else "Yeni Konuşma"
+    title = first_user_content[:30] + ("..." if len(first_user_content) > 30 else "")
+
+    if conv_id:
+        conv = Conversation.query.filter_by(id=conv_id, username=username).first()
+        if conv:
+            conv.messages_json = json.dumps(messages, ensure_ascii=False)
+            conv.title = title
+            db.session.commit()
+            return jsonify({"success": True, "conversation_id": conv.id, "title": title})
+
+    conv = Conversation(
+        username=username,
+        title=title,
+        messages_json=json.dumps(messages, ensure_ascii=False)
+    )
+    db.session.add(conv)
+    db.session.commit()
+    return jsonify({"success": True, "conversation_id": conv.id, "title": title})
+
+
+@chatbot_bp.route("/conversations", methods=["GET"])
+def get_conversations():
+    """Kullanıcının geçmiş konuşmalarını çeker."""
+    username = session.get("username", "admin")
+    convs = Conversation.query.filter_by(username=username).order_by(Conversation.date_created.desc()).all()
+    return jsonify({
+        "success": True,
+        "conversations": [c.to_dict() for c in convs]
+    })
+
+
+@chatbot_bp.route("/conversation/<int:conv_id>/delete", methods=["POST", "DELETE"])
+def delete_conversation(conv_id: int):
+    """Belirli bir geçmiş konuşmayı siler."""
+    username = session.get("username", "admin")
+    conv = Conversation.query.filter_by(id=conv_id, username=username).first_or_404()
+    db.session.delete(conv)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Konuşma geçmişi başarıyla silindi."})
+
+
 # ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
 
 def _create_ticket(
-    problem_description: str,
-    user_message: Optional[str] = None,
-    ai_response: Optional[str] = None,
-) -> Optional[Ticket]:
-    """
-    Veritabanına yeni bir ticket kaydı ekler.
-
-    Returns:
-        Ticket: Oluşturulan ticket nesnesi, hata olursa None.
-    """
+    problem_description,
+    user_message = None,
+    ai_response = None,
+    created_by = "admin"
+):
+    """Veritabanına yeni bir ticket kaydı ekler."""
     try:
         ticket = Ticket(
             problem_description=problem_description,
@@ -165,6 +211,7 @@ def _create_ticket(
             status="Açık",
             user_message=user_message,
             ai_response=ai_response,
+            created_by=created_by
         )
         db.session.add(ticket)
         db.session.commit()

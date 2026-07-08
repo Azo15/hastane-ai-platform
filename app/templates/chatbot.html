@@ -32,64 +32,89 @@
   <!-- ──────────────────────────────────────────────────────────────
        SOL: CHATBOT PENCERESI
   ────────────────────────────────────────────────────────────────── -->
-  <div class="col-xl-5 col-lg-6 animate-in">
+  <div class="col-xl-6 col-lg-7 animate-in">
 
     <!-- Chat Kartı -->
     <div class="chat-container">
 
-      <!-- Chat Başlığı -->
-      <div class="chat-header d-flex justify-content-between align-items-center" style="padding: 14px 20px;">
-        <div class="d-flex align-items-center gap-3">
-          <div class="chat-header-avatar" style="margin-right: 0;"><i class="bi bi-robot text-white fs-5"></i></div>
-          <div class="chat-header-info">
-            <h6 style="margin: 0; font-size: 14px; font-weight: 700; color: white;">Hastane IT Destek Asistanı</h6>
-            <span style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="online-dot"></i>
-              Çevrimiçi · Llama 3.3 (Groq)
-            </span>
-          </div>
+      <!-- Geçmiş Sohbetler Sol Menüsü (Sidebar) -->
+      <div class="chat-history-sidebar">
+        <div class="chat-history-header">
+          <button onclick="startNewChat()" class="btn btn-sm btn-primary w-100 d-flex align-items-center justify-content-center gap-1" style="font-size: 11px; border-radius: 6px; padding: 6px;">
+            <i class="bi bi-plus-circle"></i> Yeni Sohbet
+          </button>
         </div>
-        <button id="clear-chat-btn" onclick="clearChat()" class="btn btn-sm text-white" 
-                style="background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"
-                onmouseover="this.style.background='rgba(255,255,255,0.25)'"
-                onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-          <i class="bi bi-trash3-fill"></i> Sohbeti Temizle
-        </button>
-      </div>
-
-      <!-- Mesajlar -->
-      <div class="chat-messages" id="chat-messages">
-
-        <!-- Karşılama Mesajı (statik, ilk yükleme) -->
-        <div class="message-wrapper">
-          <div class="message-avatar ai"><i class="bi bi-robot text-white fs-6"></i></div>
-          <div>
-            <div class="message-bubble ai">
-              Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
-              Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
-              yaşadığınız sorunları benimle paylaşabilirsiniz. 
-              Size en hızlı çözümü sunmaya çalışacağım.<br><br>
-              Nasıl yardımcı olabilirim?
+        <div class="chat-history-list" id="chat-history-list">
+          {% if conversations %}
+            {% for c in conversations %}
+            <div class="history-item" id="history-item-{{ c.id }}" onclick="loadConversation({{ c.id }})">
+              <span class="history-title" id="history-title-{{ c.id }}">{{ c.title }}</span>
+              <button class="delete-history-btn" onclick="deleteConversation({{ c.id }}, event)">
+                <i class="bi bi-x"></i>
+              </button>
             </div>
-            <div class="message-time">Şimdi</div>
+            {% endfor %}
+          {% else %}
+            <div id="no-history-msg" style="font-size: 11px; color: var(--text-muted); text-align: center; padding-top: 20px;">Geçmiş yok.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Chat Ana Ekranı -->
+      <div class="chat-main">
+        <!-- Chat Başlığı -->
+        <div class="chat-header d-flex justify-content-between align-items-center" style="padding: 14px 20px;">
+          <div class="d-flex align-items-center gap-3">
+            <div class="chat-header-avatar" style="margin-right: 0;"><i class="bi bi-robot text-white fs-5"></i></div>
+            <div class="chat-header-info">
+              <h6 style="margin: 0; font-size: 14px; font-weight: 700; color: white;">Hastane IT Destek Asistanı</h6>
+              <span style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="online-dot"></i>
+                Çevrimiçi · Llama 3.3 (Groq)
+              </span>
+            </div>
+          </div>
+          <button id="clear-chat-btn" onclick="clearChat()" class="btn btn-sm text-white" 
+                  style="background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                  onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+                  onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <i class="bi bi-trash3-fill"></i> Sohbeti Temizle
+          </button>
+        </div>
+
+        <!-- Mesajlar -->
+        <div class="chat-messages" id="chat-messages">
+          <!-- Karşılama Mesajı (statik, ilk yükleme) -->
+          <div class="message-wrapper">
+            <div class="message-avatar ai"><i class="bi bi-robot text-white fs-6"></i></div>
+            <div>
+              <div class="message-bubble ai">
+                Merhaba! Ben Hastane IT Destek Asistanıyım.<br><br>
+                Bilgisayar, yazıcı, internet, ağ veya <strong>HBYS</strong> ile ilgili 
+                yaşadığınız sorunları benimle paylaşabilirsiniz. 
+                Size en hızlı çözümü sunmaya çalışacağım.<br><br>
+                Nasıl yardımcı olabilirim?
+              </div>
+              <div class="message-time">Şimdi</div>
+            </div>
           </div>
         </div>
 
+        <!-- Mesaj Giriş Alanı -->
+        <div class="chat-input-area">
+          <textarea
+            id="chat-input"
+            class="chat-input"
+            placeholder="Sorununuzu yazın... (Enter: Gönder, Shift+Enter: Yeni satır)"
+            rows="1"
+            aria-label="Mesaj girin"
+          ></textarea>
+          <button id="send-btn" class="chat-send-btn" title="Gönder" aria-label="Mesaj gönder">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Mesaj Giriş Alanı -->
-      <div class="chat-input-area">
-        <textarea
-          id="chat-input"
-          class="chat-input"
-          placeholder="Sorununuzu yazın... (Enter: Gönder, Shift+Enter: Yeni satır)"
-          rows="1"
-          aria-label="Mesaj girin"
-        ></textarea>
-        <button id="send-btn" class="chat-send-btn" title="Gönder" aria-label="Mesaj gönder">
-          <i class="bi bi-send-fill"></i>
-        </button>
-      </div>
     </div>
 
     <!-- Ticket Aç Butonu -->
@@ -98,7 +123,7 @@
               style="padding: 12px; font-size: 13.5px; display:inline-flex; align-items:center; gap:6px;">
         <i class="bi bi-ticket-perforated-fill"></i> Destek Talebi Aç
       </button>
-      <button onclick="location.reload()" class="btn-outline-modern" 
+      <button onclick="startNewChat()" class="btn-outline-modern" 
               style="padding: 10px 16px;" title="Yeni Konuşma Başlat">
         <i class="bi bi-arrow-counterclockwise"></i>
       </button>
@@ -143,7 +168,7 @@
   <!-- ──────────────────────────────────────────────────────────────
        SAĞ: AKTİF TİCKET LİSTESİ
   ────────────────────────────────────────────────────────────────── -->
-  <div class="col-xl-7 col-lg-6 animate-in">
+  <div class="col-xl-6 col-lg-5 animate-in">
     <div class="card-modern h-100">
       <div class="card-header-modern">
         <span class="card-title-modern">

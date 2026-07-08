@@ -73,10 +73,17 @@ def update_env_variable(key, value):
 
 @main_bp.route("/")
 def index():
-    """Karşılama ekranı — Hastane AI Platformu genel özet paneli."""
-    # SQLite veritabanından gerçek sayıları çekelim
+    """Karşılama ekranı — Hastane AI Platformu genel özet paneli. Rol bazlı istatistikler."""
+    username = session.get("username", "admin")
+    role = session.get("user_role_code", "admin")
+
+    # SQLite veritabanından rol bazlı sayıları çekelim
     try:
-        tickets = Ticket.query.all()
+        if role == "admin":
+            tickets = Ticket.query.all()
+        else:
+            tickets = Ticket.query.filter_by(created_by=username).all()
+            
         open_t = sum(1 for t in tickets if t.status == "Açık")
         resolved_t = sum(1 for t in tickets if t.status == "Çözüldü")
     except Exception:
@@ -197,13 +204,13 @@ DEMO_USERS = {
     "sekreter": {
         "password": "123",
         "name": "Merve Kaya",
-        "role": "Poliklinik Sekreteri",
+        "role": "HBYS Kullanıcısı",
         "role_code": "sekreter"
     },
     "admin": {
         "password": "123",
         "name": "Bilgi İşlem",
-        "role": "Sistem Yöneticisi",
+        "role": "Bilgi İşlem Sorumlusu",
         "role_code": "admin"
     }
 }
