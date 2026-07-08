@@ -118,7 +118,6 @@ async function initNotifications() {
     const resp = await fetch("/chatbot/tickets");
     if (!resp.ok) throw new Error("API yanıt vermedi");
     const data = await resp.json();
-
     const tickets = data.tickets || [];
 
     // Yükleniyor yazısını kaldır
@@ -126,25 +125,27 @@ async function initNotifications() {
 
     if (tickets.length === 0) {
       list.innerHTML = `
-        <div style="padding:24px; text-align:center; color:#a0aec0; font-size:13px;">
-          <div style="font-size:28px; margin-bottom:8px;">🔔</div>
-          Henüz bildirim yok.
+        <div style="padding:28px 18px; text-align:center; color:#a0aec0; font-size:13px;">
+          <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+          Henüz destek talebi yok.
         </div>`;
-      if (badge) { badge.textContent = "0"; badge.style.display = "none"; }
-      if (dot)   dot.style.display = "none";
+      if (badge) badge.style.display = "none";
+      if (dot)   dot.style.display   = "none";
       return;
     }
 
-    // En son 5 ticketı göster (en yeniden eskiye)
+    // Toplam açık ticket sayısı (badge için tüm liste)
+    const totalOpen = tickets.filter(t => t.status === "Açık").length;
+
+    // Gösterim için en son 5 ticket (en yeniden eskiye)
     const recent = tickets.slice().reverse().slice(0, 5);
-    const openCount = recent.filter(t => t.status === "Açık").length;
 
     recent.forEach(ticket => {
       const isOpen   = ticket.status === "Açık";
       const icon     = isOpen ? "🎫" : "✅";
       const bg       = isOpen ? "#eff6ff" : "#f8fafc";
-      const descText = (ticket.problem_description || "Ticket oluşturuldu.")
-                       .substring(0, 55) + (ticket.problem_description?.length > 55 ? "…" : "");
+      const desc     = ticket.problem_description || "Destek talebi oluşturuldu.";
+      const descShort = desc.length > 58 ? desc.substring(0, 58) + "…" : desc;
 
       const el = document.createElement("div");
       el.className = isOpen ? "notif-item unread" : "notif-item";
@@ -162,32 +163,39 @@ async function initNotifications() {
 
       el.innerHTML = `
         <span style="font-size:20px;margin-top:2px;">${icon}</span>
-        <div>
+        <div style="min-width:0;">
           <div style="font-size:13px;font-weight:600;color:#1a202c;">
-            ${isOpen ? "Açık" : "Çözüldü"} Destek Talebi #${ticket.id}
+            ${isOpen ? "🔴 Açık" : "✅ Çözüldü"} — Talep #${ticket.id}
           </div>
-          <div style="font-size:12px;color:#718096;margin-top:2px;">${escapeHtml(descText)}</div>
+          <div style="font-size:12px;color:#718096;margin-top:2px;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${escapeHtml(descShort)}
+          </div>
           <div style="font-size:11px;color:#a0aec0;margin-top:3px;">${ticket.date_created || ""}</div>
         </div>`;
 
       list.appendChild(el);
     });
 
-    // Badge güncelle
+    // Badge: toplam açık ticket sayısı
     if (badge) {
-      badge.textContent = openCount;
-      badge.style.display = openCount > 0 ? "" : "none";
+      badge.textContent  = totalOpen;
+      badge.style.display = totalOpen > 0 ? "" : "none";
     }
-    if (dot) dot.style.display = openCount > 0 ? "" : "none";
+    if (dot) dot.style.display = totalOpen > 0 ? "" : "none";
 
   } catch (e) {
-    if (loading) loading.innerHTML = `<div style="padding:16px;text-align:center;color:#a0aec0;font-size:12px;">Bildirimler yüklenemedi.</div>`;
+    if (loading) loading.innerHTML =
+      `<div style="padding:20px;text-align:center;color:#fc8181;font-size:12px;">
+         ⚠️ Bildirimler yüklenemedi.
+       </div>`;
     console.warn("Bildirim yükleme hatası:", e);
   }
 }
 
 // Sayfa yüklenince bildirimleri çek
 document.addEventListener("DOMContentLoaded", initNotifications);
+
 
 // ─── Saat Güncelleyici ────────────────────────────────────────────────────
 function updateClock() {
