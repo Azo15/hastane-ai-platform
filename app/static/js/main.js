@@ -46,7 +46,7 @@ function dismissNotification(ticketId, event) {
       if (list && list.querySelectorAll(".notif-item").length === 0) {
         list.innerHTML = `
           <div style="padding:28px 18px; text-align:center; color:#a0aec0; font-size:13px;">
-            <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+            <div style="font-size:32px; margin-bottom:8px;"><i class="bi bi-bell-slash text-muted"></i></div>
             Henüz yeni bildirim yok.
           </div>`;
       }
@@ -82,14 +82,14 @@ function addNotification(ticket, type = "ticket") {
   const pad = (n) => String(n).padStart(2, "0");
   const timeStr = `Bugün ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-  let icon  = "🎫";
+  let icon  = '<i class="bi bi-ticket-perforated-fill text-primary" style="font-size:18px;"></i>';
   let title = `Talep #${ticket.id} (Açık)`;
   let desc  = ticket.problem_description
     ? ticket.problem_description.substring(0, 60) + (ticket.problem_description.length > 60 ? "..." : "")
     : "Yeni ticket oluşturuldu.";
 
   if (type === "auto") {
-    icon  = "🤖";
+    icon  = '<i class="bi bi-robot text-primary" style="font-size:18px;"></i>';
     title = `Otomatik Talep #${ticket.id}`;
   }
 
@@ -110,7 +110,7 @@ function addNotification(ticket, type = "ticket") {
   ].join(";");
 
   el.innerHTML = `
-    <span style="font-size:20px;margin-top:2px;">${icon}</span>
+    <span style="display:inline-flex; align-items:center; margin-top:2px;">${icon}</span>
     <div style="min-width:0; flex:1;">
       <div style="font-size:13px;font-weight:600;color:#1a202c;">${title}</div>
       <div style="font-size:12px;color:#718096;margin-top:2px;
@@ -122,7 +122,7 @@ function addNotification(ticket, type = "ticket") {
         <button class="btn btn-sm p-0 text-primary fw-semibold" 
                 onclick="dismissNotification(${ticket.id}, event)"
                 style="font-size:11px;text-decoration:none;border:none;background:none;cursor:pointer;">
-          ✓ Okundu İşaretle
+          Okundu İşaretle
         </button>
       </div>
     </div>
@@ -173,7 +173,7 @@ async function initNotifications() {
     if (activeNotifications.length === 0) {
       list.innerHTML = `
         <div style="padding:28px 18px; text-align:center; color:#a0aec0; font-size:13px;">
-          <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+          <div style="font-size:32px; margin-bottom:8px;"><i class="bi bi-bell-slash text-muted"></i></div>
           Henüz yeni bildirim yok.
         </div>`;
       if (badge) badge.style.display = "none";
@@ -189,7 +189,9 @@ async function initNotifications() {
 
     recent.forEach(ticket => {
       const isOpen   = ticket.status === "Açık";
-      const icon     = isOpen ? "🎫" : "✅";
+      const icon     = isOpen 
+        ? '<i class="bi bi-ticket-perforated-fill text-primary" style="font-size:18px;"></i>' 
+        : '<i class="bi bi-check-circle-fill text-success" style="font-size:18px;"></i>';
       const bg       = isOpen ? "#eff6ff" : "#f8fafc";
       const desc     = ticket.problem_description || "Destek talebi oluşturuldu.";
       const descShort = desc.length > 58 ? desc.substring(0, 58) + "…" : desc;
@@ -210,7 +212,7 @@ async function initNotifications() {
       ].join(";");
 
       el.innerHTML = `
-        <span style="font-size:20px;margin-top:2px;">${icon}</span>
+        <span style="display:inline-flex; align-items:center; margin-top:2px;">${icon}</span>
         <div style="min-width:0; flex:1;">
           <div style="font-size:13px;font-weight:600;color:#1a202c;">
             Talep #${ticket.id} (${isOpen ? "Açık" : "Çözüldü"})
@@ -224,7 +226,7 @@ async function initNotifications() {
             <button class="btn btn-sm p-0 text-primary fw-semibold" 
                     onclick="dismissNotification(${ticket.id}, event)"
                     style="font-size:11px;text-decoration:none;border:none;background:none;cursor:pointer;">
-              ✓ Okundu İşaretle
+              Okundu İşaretle
             </button>
           </div>
         </div>`;
@@ -279,11 +281,11 @@ async function showTicketDetails(ticketId) {
   
   const statusBadge = document.getElementById("modal-ticket-status");
   if (ticket.status === "Açık") {
-    statusBadge.textContent = "🔴 Açık Destek Talebi";
+    statusBadge.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i> Açık Destek Talebi';
     statusBadge.style.background = "#fee2e2";
     statusBadge.style.color = "#b91c1c";
   } else {
-    statusBadge.textContent = "✅ Çözüldü / Kapatıldı";
+    statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Çözüldü / Kapatıldı';
     statusBadge.style.background = "#dcfce7";
     statusBadge.style.color = "#15803d";
   }
@@ -387,11 +389,16 @@ function showToast(message, type = "success") {
       return c;
     })();
 
-  const icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+  const icons = { 
+    success: '<i class="bi bi-check-circle-fill text-success" style="font-size:16px;"></i>', 
+    error: '<i class="bi bi-x-circle-fill text-danger" style="font-size:16px;"></i>', 
+    warning: '<i class="bi bi-exclamation-triangle-fill text-warning" style="font-size:16px;"></i>', 
+    info: '<i class="bi bi-info-circle-fill text-info" style="font-size:16px;"></i>' 
+  };
   const toast = document.createElement("div");
   toast.className = `toast-item ${type}`;
   toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || "ℹ️"}</span>
+    <span class="toast-icon" style="display:inline-flex; align-items:center; justify-content:center;">${icons[type] || ""}</span>
     <span class="toast-message">${message}</span>
     <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
   `;
@@ -416,7 +423,9 @@ function appendMessage(role, text, timestamp = null) {
 
   const isUser = role === "user";
   const avatarClass = isUser ? "user" : "ai";
-  const avatarIcon  = isUser ? "👤" : "🤖";
+  const avatarIcon  = isUser 
+    ? '<i class="bi bi-person-fill text-white" style="font-size: 14px;"></i>' 
+    : '<i class="bi bi-robot text-white" style="font-size: 14px;"></i>';
   const bubbleClass = isUser ? "user" : "ai";
   const alignment   = isUser ? "user" : "";
 
@@ -426,7 +435,7 @@ function appendMessage(role, text, timestamp = null) {
   const wrapper = document.createElement("div");
   wrapper.className = `message-wrapper ${alignment}`;
   wrapper.innerHTML = `
-    <div class="message-avatar ${avatarClass}">${avatarIcon}</div>
+    <div class="message-avatar ${avatarClass}" style="display:inline-flex; align-items:center; justify-content:center;">${avatarIcon}</div>
     <div>
       <div class="message-bubble ${bubbleClass}">${safeText}</div>
       <div class="message-time">${timeStr}</div>
@@ -445,7 +454,9 @@ function showTypingIndicator() {
   wrapper.className = "message-wrapper";
   wrapper.id = "typing-indicator";
   wrapper.innerHTML = `
-    <div class="message-avatar ai">🤖</div>
+    <div class="message-avatar ai" style="display:inline-flex; align-items:center; justify-content:center;">
+      <i class="bi bi-robot text-white" style="font-size: 14px;"></i>
+    </div>
     <div class="typing-indicator">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
@@ -573,7 +584,7 @@ async function openTicket() {
     console.error("Ticket oluşturma hatası:", error);
   } finally {
     ticketBtn.disabled = false;
-    ticketBtn.innerHTML = '🎫 Destek Talebi (Ticket) Aç';
+    ticketBtn.innerHTML = '<i class="bi bi-ticket-perforated-fill me-1"></i> Destek Talebi Aç';
   }
 }
 
@@ -596,8 +607,10 @@ function addTicketToTable(ticket) {
     <td>
       <span class="ticket-status-badge ticket-status-${
         ticket.status === "Açık" ? "open" : "closed"
-      }">
-        ${ticket.status === "Açık" ? "🔴" : "✅"} ${ticket.status}
+      }" style="display:inline-flex; align-items:center; gap:4px;">
+        ${ticket.status === "Açık" 
+          ? '<i class="bi bi-exclamation-circle-fill"></i>' 
+          : '<i class="bi bi-check-circle-fill"></i>'} ${ticket.status}
       </span>
     </td>
     <td>
@@ -605,8 +618,9 @@ function addTicketToTable(ticket) {
         class="btn-danger-modern" 
         onclick="closeTicket(${ticket.id})"
         id="close-btn-${ticket.id}"
+        style="display:inline-flex; align-items:center; gap:4px;"
       >
-        ✓ Kapat
+        <i class="bi bi-x-circle"></i> Kapat
       </button>
     </td>
   `;
