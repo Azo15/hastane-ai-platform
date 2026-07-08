@@ -47,7 +47,9 @@
           
           <!-- HASTANE ADI -->
           <div class="mb-4">
-            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">🏥 Hastane Adı</label>
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px;">
+              <i class="bi bi-hospital"></i> Hastane Adı
+            </label>
             <input type="text" class="form-control px-3 py-2" name="hospital_name" 
                    value="{{ settings.hospital_name }}" 
                    placeholder="Örn: Hastane AI" required
@@ -59,7 +61,9 @@
 
           <!-- SAĞLAYICI SEÇİMİ -->
           <div class="mb-4">
-            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">🤖 Aktif Yapay Zeka Sağlayıcısı</label>
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px;">
+              <i class="bi bi-cpu-fill"></i> Aktif Yapay Zeka Sağlayıcısı
+            </label>
             <div class="d-flex gap-3">
               <!-- Groq -->
               <label class="flex-fill p-3 border rounded d-flex align-items-center gap-3" style="cursor:pointer; border-radius:12px; border:1.5px solid var(--border); transition:all 0.2s;" id="label-provider-groq">
@@ -108,7 +112,9 @@
 
           <!-- AI SYSTEM PROMPT -->
           <div class="mb-4">
-            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">⚙️ AI Sistem Rol Promptu</label>
+            <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px;">
+              <i class="bi bi-gear-wide-connected"></i> AI Sistem Rol Promptu
+            </label>
             <textarea class="form-control p-3" name="system_prompt" rows="8" required
                       style="border-radius:12px; border:1.5px solid var(--border); font-size:13px; font-family:'Courier New', monospace; line-height:1.5;">{{ settings.system_prompt }}</textarea>
             <div class="form-text text-muted" style="font-size:11px; margin-top:6px;">
