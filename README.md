@@ -22,7 +22,7 @@ Hastane AI, sağlık kuruluşlarının operasyonel verimliliğini artırmak ve I
 ### 4. Gelişmiş Raporlama & Veri Aktarımı
 *   **PDF Raporu:** CSS Print optimizasyonu sayesinde sayfa tasarımı bozulmadan, gereksiz menüler (sidebar vb.) gizlenerek temiz bir A4 PDF çıktısı alınmasını sağlar.
 *   **Excel (CSV) Aktarımı:** Veritabanındaki tüm IT destek biletlerini tek tuşla CSV formatında indirerek Excel gibi araçlarla analiz etme imkanı sunar.
-
+ 
 ---
 
 ## 🛠️ Kullanılan Teknolojiler
