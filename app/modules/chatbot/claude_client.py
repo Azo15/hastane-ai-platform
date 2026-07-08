@@ -14,6 +14,7 @@ Ticket tetikleme mantığı:
 from __future__ import annotations
 import os
 import logging
+import json
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,8 @@ logger = logging.getLogger(__name__)
 # Gizli marker — AI yanıtının sonuna sadece gerekliyse eklenir
 TICKET_MARKER = "[##TICKET_GEREKLI##]"
 
-# ─── IT Destek Asistanı Sistem Promptu ───────────────────────────────────────
-SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
+# ─── IT Destek Asistanı Sistem Promptu (Yedek) ───────────────────────────────
+DEFAULT_SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
 Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) \
 sorunlarına teknik çözüm üretirsin.
 Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver.
@@ -37,7 +38,20 @@ bu işareti KESİNLİKLE KULLANMA. İşaret olmadan da yardım edebiliyorsan, et
 
 Yanıtın sonundaki bu işaret kullanıcıya gösterilmez; sistem otomatik ticket açar.
 ======================================"""
-# ─────────────────────────────────────────────────────────────────────────────
+
+def get_dynamic_prompt() -> str:
+    """Settings.json dosyasından dinamik prompt okur, yoksa yedeği döner."""
+    try:
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        settings_path = os.path.join(root, "instance", "settings.json")
+        if os.path.exists(settings_path):
+            with open(settings_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
+    except Exception as e:
+        logger.warning(f"Dinamik prompt okunamadi: {e}")
+    return DEFAULT_SYSTEM_PROMPT
+
 
 
 def _get_provider():
@@ -116,17 +130,18 @@ def chat_with_claude(
     messages.append({"role": "user", "content": user_message})
 
     try:
+        dynamic_prompt = get_dynamic_prompt()
         if provider == "anthropic":
             response = client.messages.create(
                 model=model,
                 max_tokens=1024,
-                system=SYSTEM_PROMPT,
+                system=dynamic_prompt,
                 messages=messages,
             )
             raw_text = response.content[0].text
 
         elif provider == "groq":
-            groq_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+            groq_messages = [{"role": "system", "content": dynamic_prompt}] + messages
             completion = client.chat.completions.create(
                 model=model,
                 messages=groq_messages,
