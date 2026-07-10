@@ -91,7 +91,21 @@ def should_create_ticket(response_text: str) -> bool:
     if TICKET_MARKER in response_text:
         return True
 
-    # Ekibin yola çıktığını veya kaydın açıldığını bildiren anlamsal yedek kelimeler
+    clean_text = response_text.lower()
+
+    # Türkçe ek çekimleri ve doğal dil varyasyonları için esnek kelime kombinasyonu kontrolleri
+    if "fiziksel" in clean_text and "müdahale" in clean_text:
+        return True
+    if "talep" in clean_text and ("oluş" in clean_text or "açt" in clean_text or "açıl" in clean_text or "açtım" in clean_text):
+        return True
+    if "ekip" in clean_text and ("yola" in clean_text or "yönlen" in clean_text or "gel" in clean_text or "git" in clean_text):
+        return True
+    if "arıza kaydı" in clean_text or "arıza kaydınız" in clean_text:
+        return True
+    if "bilet" in clean_text and ("oluş" in clean_text or "aç" in clean_text):
+        return True
+
+    # Eski indicators listesi (yedek olarak)
     indicators = [
         "yola çık",
         "yola koyul",
@@ -108,7 +122,6 @@ def should_create_ticket(response_text: str) -> bool:
         "teknisyen"
     ]
     
-    clean_text = response_text.lower()
     for ind in indicators:
         if ind in clean_text:
             return True
