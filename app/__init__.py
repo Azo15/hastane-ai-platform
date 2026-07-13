@@ -41,8 +41,13 @@ def create_app():
     def inject_settings():
         return dict(system_settings=load_settings())
 
-    # Veritabanı tablolarını oluştur
+    # Veritabanı tablolarını oluştur ve makine öğrenmesi modelini ön yükle (yoksa eğitir)
     with app.app_context():
         init_db(app)
+        try:
+            from .modules.no_show.model_utils import load_model
+            load_model()
+        except Exception as e:
+            app.logger.warning(f"Model ön yükleme hatası: {e}")
 
     return app
