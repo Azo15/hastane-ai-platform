@@ -44,7 +44,8 @@
       
       <div class="card-body p-4">
         <form method="POST" action="{{ url_for('main.settings') }}">
-          
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
           <!-- HASTANE ADI -->
           <div class="mb-4">
             <label class="form-label fw-bold text-dark mb-2" style="font-size:13px; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px;">

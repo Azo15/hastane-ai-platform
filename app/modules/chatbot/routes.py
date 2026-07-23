@@ -1,33 +1,45 @@
 """
 app/modules/chatbot/routes.py — IT Destek Chatbot Rotaları
 
-/chatbot/              → Chat arayüzü + aktif ticket listesi
+/chatbot/              → Chat arayüzü + aktif ticket listesi (arama/filtre/sayfalama destekli)
 /chatbot/send          → POST: Mesaj gönder, Claude yanıtı al, ticket kontrol et
 /chatbot/create-ticket → POST: Manuel ticket oluştur (buton tıklaması)
 /chatbot/tickets       → GET: Tüm aktif ticketları JSON olarak döndür
-/chatbot/ticket/<id>/close → POST: Ticket'ı kapat
+/chatbot/ticket/<id>/close → POST: Ticket'ı kapat (sahiplik/rol kontrollü)
 """
 
 from datetime import datetime
-from flask import render_template, request, jsonify, session
+from flask import render_template, request, jsonify, session, abort
 from . import chatbot_bp
 from .claude_client import chat_with_claude
-from ...database import db, Ticket, Conversation
+from ...database import db, Ticket, Conversation, get_visible_tickets_query
+
+TICKETS_PER_PAGE = 15
 
 
 @chatbot_bp.route("/", methods=["GET"])
 def index():
-    """Chat arayüzü ve aktif ticket listesi. Rol bazlı filtreleme yapılır."""
+    """Chat arayüzü ve aktif ticket listesi. Rol bazlı filtreleme + arama/durum filtresi + sayfalama."""
     username = session.get("username", "admin")
     role = session.get("user_role_code", "admin")
 
-    if role == "admin":
-        tickets = Ticket.query.order_by(Ticket.date_created.desc()).limit(20).all()
-    else:
-        tickets = Ticket.query.filter_by(created_by=username).order_by(Ticket.date_created.desc()).limit(20).all()
+    status = request.args.get("status", "").strip() or None
+    search = request.args.get("q", "").strip() or None
+    page = request.args.get("page", 1, type=int)
+
+    pagination = get_visible_tickets_query(role, username, status=status, search=search).paginate(
+        page=page, per_page=TICKETS_PER_PAGE, error_out=False
+    )
 
     conversations = Conversation.query.filter_by(username=username).order_by(Conversation.date_created.desc()).all()
-    return render_template("chatbot.html", tickets=tickets, conversations=conversations)
+    return render_template(
+        "chatbot.html",
+        tickets=pagination.items,
+        pagination=pagination,
+        current_status=status or "",
+        current_search=search or "",
+        conversations=conversations,
+    )
 
 
 @chatbot_bp.route("/send", methods=["POST"])
@@ -107,10 +119,7 @@ def get_tickets():
     username = session.get("username", "admin")
     role = session.get("user_role_code", "admin")
 
-    if role == "admin":
-        tickets = Ticket.query.order_by(Ticket.date_created.desc()).all()
-    else:
-        tickets = Ticket.query.filter_by(created_by=username).order_by(Ticket.date_created.desc()).all()
+    tickets = get_visible_tickets_query(role, username).all()
 
     return jsonify(
         {
@@ -124,8 +133,18 @@ def get_tickets():
 
 @chatbot_bp.route("/ticket/<int:ticket_id>/close", methods=["POST"])
 def close_ticket(ticket_id: int):
-    """Belirtilen ticket'ı 'Çözüldü' olarak günceller."""
+    """Belirtilen ticket'ı 'Çözüldü' olarak günceller.
+
+    Sadece admin veya biletin sahibi kapatabilir — aksi halde herhangi bir
+    kullanıcı ID'sini tahmin ederek başkasının biletini kapatabilirdi (IDOR).
+    """
+    username = session.get("username", "admin")
+    role = session.get("user_role_code", "admin")
+
     ticket = Ticket.query.get_or_404(ticket_id)
+    if role != "admin" and ticket.created_by != username:
+        abort(403)
+
     ticket.status = "Çözüldü"
     db.session.commit()
     return jsonify(

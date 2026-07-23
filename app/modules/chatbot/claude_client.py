@@ -87,46 +87,30 @@ def _get_provider():
 
 
 def should_create_ticket(response_text: str) -> bool:
-    """Yanıtta gizli ticket marker veya bilet açıldığını/ekibin yola çıktığını bildiren ifadeler var mı kontrol eder."""
+    """Yanıtta ticket açılması gerektiğini gösteren gizli marker var mı kontrol eder.
+
+    Sistem promptu modele marker eklemesini KESIN olarak emrettiği için asıl
+    tetikleyici budur. Buradaki kısa liste yalnızca modelin markeri unuttuğu
+    nadir durumlar için bir yedektir — önceki sürümdeki geniş "kelime + kelime"
+    kombinasyonları (örn. "ekip" + "gel") normal, biletle ilgisiz cevaplarda bile
+    yanlışlıkla eşleşip gereksiz ticket açabiliyordu, bu yüzden kaldırıldı.
+    """
     if TICKET_MARKER in response_text:
         return True
 
     clean_text = response_text.lower()
 
-    # Türkçe ek çekimleri ve doğal dil varyasyonları için esnek kelime kombinasyonu kontrolleri
-    if "fiziksel" in clean_text and "müdahale" in clean_text:
-        return True
-    if "talep" in clean_text and ("oluş" in clean_text or "açt" in clean_text or "açıl" in clean_text or "açtım" in clean_text):
-        return True
-    if "ekip" in clean_text and ("yola" in clean_text or "yönlen" in clean_text or "gel" in clean_text or "git" in clean_text):
-        return True
-    if "arıza kaydı" in clean_text or "arıza kaydınız" in clean_text:
-        return True
-    if "bilet" in clean_text and ("oluş" in clean_text or "aç" in clean_text):
-        return True
-
-    # Eski indicators listesi (yedek olarak)
-    indicators = [
-        "yola çık",
-        "yola koyul",
-        "ekip yönlendir",
-        "ekibim yönlendir",
-        "talep oluştur",
-        "bilet oluştur",
-        "bilet aç",
+    fallback_phrases = [
         "destek talebi aç",
         "arıza kaydı oluştur",
-        "kayıt açt",
-        "fiziksel müdahale",
-        "donanım arızası",
-        "teknisyen"
+        "bilet oluştur",
+        "bilet aç",
+        "fiziksel müdahale gerek",
+        "teknisyen yönlendir",
+        "ekip yönlendir",
     ]
-    
-    for ind in indicators:
-        if ind in clean_text:
-            return True
-            
-    return False
+
+    return any(phrase in clean_text for phrase in fallback_phrases)
 
 
 def clean_response(response_text: str) -> str:

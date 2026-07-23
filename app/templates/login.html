@@ -297,7 +297,8 @@
 
       <!-- MANUEL FORM -->
       <form id="login-form" method="POST" action="{{ url_for('main.login') }}">
-        
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <div class="form-group-modern">
           <input type="text" id="username" name="username" class="form-input-modern" 
                  placeholder="Kullanıcı Adı" required>
