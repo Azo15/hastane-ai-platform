@@ -21,8 +21,8 @@
       <i class="bi bi-stars me-1"></i> Groq AI
     </span>
     <div style="font-size:13px; color:var(--text-secondary);">
-      Açık Ticket: 
-      <strong id="ticket-count" style="color:#ef4444;">{{ tickets|selectattr('status', 'equalto', 'Açık')|list|length }}</strong>
+      Açık Ticket:
+      <strong id="ticket-count" style="color:#ef4444;">{{ open_count }}</strong>
     </div>
   </div>
 </div>
@@ -177,13 +177,32 @@
         </span>
         <div class="d-flex gap-2 align-items-center">
           <span class="badge rounded-pill" style="background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:600;">
-            {{ tickets|selectattr('status', 'equalto', 'Açık')|list|length }} Açık
+            {{ open_count }} Açık
           </span>
           <span class="badge rounded-pill" style="background:#dcfce7; color:#15803d; font-size:11px; font-weight:600;">
-            {{ tickets|selectattr('status', 'equalto', 'Çözüldü')|list|length }} Çözüldü
+            {{ resolved_count }} Çözüldü
           </span>
         </div>
       </div>
+
+      <!-- Arama ve Durum Filtresi -->
+      <form method="GET" action="{{ url_for('chatbot.index') }}" class="d-flex gap-2 p-3" style="border-bottom:1px solid var(--border);">
+        <input type="text" name="q" value="{{ current_search }}" placeholder="Açıklamada ara..."
+               class="form-control form-control-sm" style="border-radius:8px; font-size:12.5px; max-width:220px;">
+        <select name="status" class="form-select form-select-sm" style="border-radius:8px; font-size:12.5px; max-width:150px;">
+          <option value="" {% if not current_status %}selected{% endif %}>Tüm Durumlar</option>
+          <option value="Açık" {% if current_status == 'Açık' %}selected{% endif %}>Açık</option>
+          <option value="Çözüldü" {% if current_status == 'Çözüldü' %}selected{% endif %}>Çözüldü</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary" style="border-radius:8px; font-size:12.5px;">
+          <i class="bi bi-search"></i>
+        </button>
+        {% if current_search or current_status %}
+        <a href="{{ url_for('chatbot.index') }}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px; font-size:12.5px;">
+          Temizle
+        </a>
+        {% endif %}
+      </form>
 
       <div style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
         <table class="high-risk-table">
@@ -255,8 +274,27 @@
         </table>
       </div>
 
+      <!-- Sayfalama -->
+      {% if pagination and pagination.pages > 1 %}
+      <div class="d-flex justify-content-center align-items-center gap-2 py-2" style="border-top:1px solid var(--border);">
+        <a class="btn btn-sm btn-outline-secondary {% if not pagination.has_prev %}disabled{% endif %}"
+           style="border-radius:6px; font-size:12px;"
+           href="{{ url_for('chatbot.index', page=pagination.prev_num, status=current_status, q=current_search) }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+        <span style="font-size:12px; color:var(--text-secondary);">
+          Sayfa {{ pagination.page }} / {{ pagination.pages }}
+        </span>
+        <a class="btn btn-sm btn-outline-secondary {% if not pagination.has_next %}disabled{% endif %}"
+           style="border-radius:6px; font-size:12px;"
+           href="{{ url_for('chatbot.index', page=pagination.next_num, status=current_status, q=current_search) }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </div>
+      {% endif %}
+
       <!-- Tablo alt bilgisi -->
-      <div style="padding:12px 20px; border-top:1px solid var(--border); font-size:11px; 
+      <div style="padding:12px 20px; border-top:1px solid var(--border); font-size:11px;
                   color:var(--text-muted); display:flex; align-items:center; gap:6px;">
         <i class="bi bi-info-circle"></i>
         Ticketlar 30 saniyede bir otomatik güncellenir. Manuel yenilemek için sayfayı yenileyin.

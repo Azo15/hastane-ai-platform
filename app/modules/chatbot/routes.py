@@ -31,6 +31,10 @@ def index():
         page=page, per_page=TICKETS_PER_PAGE, error_out=False
     )
 
+    # Filtreden bağımsız toplam sayılar (üstteki rozetler için) — rol bazlı, tüm kayıtlar.
+    open_count = get_visible_tickets_query(role, username, status="Açık").count()
+    resolved_count = get_visible_tickets_query(role, username, status="Çözüldü").count()
+
     conversations = Conversation.query.filter_by(username=username).order_by(Conversation.date_created.desc()).all()
     return render_template(
         "chatbot.html",
@@ -38,6 +42,8 @@ def index():
         pagination=pagination,
         current_status=status or "",
         current_search=search or "",
+        open_count=open_count,
+        resolved_count=resolved_count,
         conversations=conversations,
     )
 
