@@ -3,7 +3,10 @@ app/__init__.py — Flask Application Factory
 Blueprintleri ve uzantıları kayıt eder.
 """
 
+from __future__ import annotations
+
 import os
+from typing import Optional
 from flask import Flask
 from dotenv import load_dotenv
 from flask_wtf import CSRFProtect
@@ -14,7 +17,7 @@ load_dotenv()
 csrf = CSRFProtect()
 
 
-def create_app(test_config: dict | None = None):
+def create_app(test_config: Optional[dict] = None):
     """Flask uygulama fabrikası — tüm Blueprint ve uzantıları başlatır.
 
     test_config verilirse (pytest için) varsayılan ayarların üzerine yazılır.
