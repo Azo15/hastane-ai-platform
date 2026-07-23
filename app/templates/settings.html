@@ -155,21 +155,116 @@
             <li>Soldaki forma yapıştırıp kaydedin.</li>
           </ol>
         </div>
-        
+
         <div class="mb-3 border-top pt-3">
           <strong class="text-dark">Sistem Promptu ve Bilet Kesme:</strong>
           <p class="mb-0">
-            Chatbot, prompt içindeki kurallara göre hastane personeline yanıt verir. AI'ın talebi biletleştirebilmesi için promptun sonuna 
+            Chatbot, prompt içindeki kurallara göre hastane personeline yanıt verir. AI'ın talebi biletleştirebilmesi için promptun sonuna
             <code class="px-1 py-0.5 bg-light rounded text-danger">[##TICKET_GEREKLI##]</code> marker'ını koyması emredilmiştir.
           </p>
         </div>
-        
+
         <div class="border-top pt-3">
           <strong class="text-dark">Ortam Değişkenleri:</strong>
           <p class="mb-0">
             Kaydedilen API anahtarları projedeki <code class="px-1 bg-light rounded">.env</code> dosyasına otomatik yazılır. Dosya, git repolarına yüklenmeyecek şekilde hariç tutulmuştur.
           </p>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KULLANICI YÖNETİMİ -->
+<div class="row g-4 mt-1">
+  <div class="col-12 animate-in">
+    <div class="card-modern">
+      <div class="card-header-modern">
+        <span class="card-title-modern">
+          <i class="bi bi-people-fill" style="color:var(--primary);"></i>
+          Kullanıcı Yönetimi
+        </span>
+      </div>
+      <div class="card-body p-4">
+
+        <!-- Yeni Kullanıcı Formu -->
+        <form method="POST" action="{{ url_for('main.add_user') }}" class="row g-2 align-items-end mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-md-3">
+            <label class="form-label" style="font-size:12px; font-weight:600;">Kullanıcı Adı</label>
+            <input type="text" class="form-control" name="username" placeholder="Örn: drmehmet" required
+                   style="border-radius:8px; font-size:13px;">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" style="font-size:12px; font-weight:600;">Ad Soyad</label>
+            <input type="text" class="form-control" name="name" placeholder="Örn: Dr. Mehmet Yıldız" required
+                   style="border-radius:8px; font-size:13px;">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" style="font-size:12px; font-weight:600;">Şifre</label>
+            <input type="password" class="form-control" name="password" placeholder="Şifre" required
+                   style="border-radius:8px; font-size:13px;">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" style="font-size:12px; font-weight:600;">Rol</label>
+            <select class="form-select" name="role_code" style="border-radius:8px; font-size:13px;">
+              <option value="sekreter">HBYS Kullanıcısı</option>
+              <option value="admin">Bilgi İşlem Sorumlusu</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100" style="border-radius:8px; font-size:13px; font-weight:600;">
+              <i class="bi bi-person-plus-fill me-1"></i> Ekle
+            </button>
+          </div>
+        </form>
+
+        <!-- Kullanıcı Listesi -->
+        <div style="overflow-x:auto;">
+          <table class="high-risk-table">
+            <thead>
+              <tr>
+                <th>Kullanıcı Adı</th>
+                <th>Ad Soyad</th>
+                <th>Rol</th>
+                <th>Durum</th>
+                <th>Oluşturulma</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td><code style="font-size:12px;">{{ u.username }}</code></td>
+                <td style="font-size:13px; font-weight:500;">{{ u.name }}</td>
+                <td style="font-size:12px;">{{ u.role }}</td>
+                <td>
+                  {% if u.is_active %}
+                    <span class="text-success fw-medium" style="font-size:12px;"><i class="bi bi-check-circle-fill"></i> Aktif</span>
+                  {% else %}
+                    <span class="text-danger fw-medium" style="font-size:12px;"><i class="bi bi-x-circle-fill"></i> Pasif</span>
+                  {% endif %}
+                </td>
+                <td style="font-size:12px; color:var(--text-muted);">{{ u.date_created.strftime('%d.%m.%Y') }}</td>
+                <td>
+                  {% if u.username != session.username %}
+                  <form method="POST" action="{{ url_for('main.toggle_user', user_id=u.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if u.is_active else 'btn-outline-success' }}"
+                            style="font-size:11px; border-radius:6px;">
+                      {{ 'Devre Dışı Bırak' if u.is_active else 'Aktifleştir' }}
+                    </button>
+                  </form>
+                  {% else %}
+                    <span style="font-size:11px; color:var(--text-muted);">Bu hesap (siz)</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   </div>

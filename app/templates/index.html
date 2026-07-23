@@ -41,9 +41,9 @@
       </div>
       <div class="stat-card-content">
         <div class="stat-card-value">{{ stats.total_appointments }}</div>
-        <div class="stat-card-label">Bu Hafta Randevu</div>
-        <div class="stat-card-delta" style="color:#22c55e;">
-          <i class="bi bi-arrow-up"></i> +47 dün
+        <div class="stat-card-label">Toplam Tahmin Edilen Randevu</div>
+        <div class="stat-card-delta" style="color:var(--text-muted);">
+          <i class="bi bi-database"></i> Kayıtlı tahmin sayısı
         </div>
       </div>
     </div>
@@ -58,8 +58,8 @@
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#ef4444;">{{ stats.high_risk_count }}</div>
         <div class="stat-card-label">Yüksek Risk (&gt;70%)</div>
-        <div class="stat-card-delta" style="color:#ef4444;">
-          <i class="bi bi-arrow-up"></i> +12 bu sabah
+        <div class="stat-card-delta" style="color:var(--text-muted);">
+          <i class="bi bi-database"></i> Kayıtlı tahminler içinde
         </div>
       </div>
     </div>
@@ -74,8 +74,8 @@
       <div class="stat-card-content">
         <div class="stat-card-value" style="color:#f59e0b;">%{{ stats.no_show_rate }}</div>
         <div class="stat-card-label">No-Show Oranı</div>
-        <div class="stat-card-delta" style="color:#22c55e;">
-          <i class="bi bi-arrow-down"></i> -1.3% geçen ay
+        <div class="stat-card-delta" style="color:var(--text-muted);">
+          <i class="bi bi-database"></i> Kayıtlı tahminler içinde
         </div>
       </div>
     </div>
@@ -88,10 +88,16 @@
         <i class="bi bi-cpu text-info fs-4" style="color:#8b5cf6 !important;"></i>
       </div>
       <div class="stat-card-content">
-        <div class="stat-card-value" style="color:#8b5cf6;">%{{ stats.ai_accuracy }}</div>
+        <div class="stat-card-value" style="color:#8b5cf6;">
+          {% if stats.ai_accuracy is not none %}%{{ stats.ai_accuracy }}{% else %}—{% endif %}
+        </div>
         <div class="stat-card-label">AI Model Doğruluğu</div>
-        <div class="stat-card-delta" style="color:#22c55e;">
-          <i class="bi bi-arrow-up"></i> +0.4% son güncelleme
+        <div class="stat-card-delta" style="color:var(--text-muted);">
+          {% if stats.ai_accuracy is not none %}
+            <i class="bi bi-info-circle"></i> Test seti ölçümü
+          {% else %}
+            <i class="bi bi-dash-circle"></i> Ölçülmedi
+          {% endif %}
         </div>
       </div>
     </div>

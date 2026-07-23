@@ -38,6 +38,27 @@
       </div>
       <div class="card-body-modern">
         <form method="POST" action="{{ url_for('no_show.predict') }}" id="predict-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <!-- Hasta Adı (opsiyonel — kalıcı kayıt ve dashboard listesi için) -->
+          <div class="mb-3">
+            <label class="form-label-modern" for="patient_name">
+              <i class="bi bi-person-vcard"></i> Hasta Adı (opsiyonel)
+            </label>
+            <input type="text" id="patient_name" name="patient_name" class="form-control-modern"
+                   value="{{ form_data.patient_name if form_data else '' }}"
+                   placeholder="Örn: Ayşe Yılmaz" />
+          </div>
+
+          <!-- Poliklinik (opsiyonel) -->
+          <div class="mb-3">
+            <label class="form-label-modern" for="poliklinik">
+              <i class="bi bi-hospital"></i> Poliklinik (opsiyonel)
+            </label>
+            <input type="text" id="poliklinik" name="poliklinik" class="form-control-modern"
+                   value="{{ form_data.poliklinik if form_data else '' }}"
+                   placeholder="Örn: Kardiyoloji" />
+          </div>
 
           <!-- Yaş -->
           <div class="mb-3">
@@ -216,10 +237,10 @@
       <div class="card-header-modern">
         <span class="card-title-modern">
           <i class="bi bi-exclamation-triangle-fill" style="color:#ef4444;"></i>
-          Bu Hafta Yüksek Riskli Randevular
+          En Yüksek Riskli Tahminler
         </span>
         <span class="badge rounded-pill" style="background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:600;">
-          {{ high_risk_appointments|length }} Hasta
+          {{ high_risk_appointments|length }} Kayıt
         </span>
       </div>
 
@@ -227,10 +248,10 @@
         <table class="high-risk-table">
           <thead>
             <tr>
-              <th>Randevu ID</th>
+              <th>ID</th>
               <th>Hasta</th>
               <th>Yaş</th>
-              <th>Tarih / Saat</th>
+              <th>Tahmin Tarihi</th>
               <th>Poliklinik</th>
               <th>Risk Skoru</th>
               <th>Ön. Kaçırma</th>
@@ -242,47 +263,51 @@
             <tr>
               <td>
                 <code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px;">
-                  {{ apt.id }}
+                  #{{ apt.id }}
                 </code>
               </td>
               <td>
                 <div class="patient-name-cell">
                   <div class="patient-avatar"
                        style="background: hsl({{ loop.index * 47 }}, 65%, 50%);">
-                    {{ apt.hasta_adi[0] }}
+                    {{ apt.patient_name[0] }}
                   </div>
-                  <span class="fw-semibold" style="font-size:13px;">{{ apt.hasta_adi }}</span>
+                  <span class="fw-semibold" style="font-size:13px;">{{ apt.patient_name }}</span>
                 </div>
               </td>
-              <td>{{ apt.yas }}</td>
+              <td>{{ apt.age }}</td>
               <td>
-                <div style="font-size:13px; font-weight:600;">{{ apt.tarih }}</div>
-                <div style="font-size:11px; color:var(--text-muted);">{{ apt.saat }}</div>
+                <div style="font-size:13px; font-weight:600;">{{ apt.date_created.strftime('%d.%m.%Y') }}</div>
+                <div style="font-size:11px; color:var(--text-muted);">{{ apt.date_created.strftime('%H:%M') }}</div>
               </td>
               <td>
-                <span style="font-size:12px; background:#f0f4f8; padding:3px 8px; 
+                <span style="font-size:12px; background:#f0f4f8; padding:3px 8px;
                              border-radius:6px; font-weight:500;">
-                  {{ apt.poliklinik }}
+                  {{ apt.poliklinik or "—" }}
                 </span>
               </td>
               <td>
-                {% if apt.risk_skoru >= 80 %}
+                {% if apt.risk_score >= 80 %}
                   <span class="risk-score-pill" style="background:#fee2e2; color:#b91c1c; display:inline-flex; align-items:center; gap:4px;">
-                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_skoru }}
+                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_score }}
                   </span>
-                {% elif apt.risk_skoru >= 70 %}
+                {% elif apt.risk_score >= 70 %}
                   <span class="risk-score-pill" style="background:#fff3cd; color:#92400e; display:inline-flex; align-items:center; gap:4px;">
-                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_skoru }}
+                    <i class="bi bi-exclamation-circle-fill"></i> %{{ apt.risk_score }}
+                  </span>
+                {% else %}
+                  <span class="risk-score-pill" style="background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; gap:4px;">
+                    %{{ apt.risk_score }}
                   </span>
                 {% endif %}
               </td>
               <td>
-                <span class="fw-bold" style="color:{% if apt.onceki_kaçirma >= 3 %}#ef4444{% else %}#f59e0b{% endif %};">
-                  {{ apt.onceki_kaçirma }}x
+                <span class="fw-bold" style="color:{% if apt.previous_noshow >= 3 %}#ef4444{% else %}#f59e0b{% endif %};">
+                  {{ apt.previous_noshow }}x
                 </span>
               </td>
               <td>
-                {% if apt.sms_gonderildi == 'Evet' %}
+                {% if apt.sms_received %}
                   <span class="text-success fw-medium" style="font-size:13px; display:inline-flex; align-items:center; gap:4px;">
                     <i class="bi bi-check-circle-fill"></i> Gönderildi
                   </span>
@@ -293,15 +318,23 @@
                 {% endif %}
               </td>
             </tr>
+            {% else %}
+            <tr>
+              <td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">
+                <div style="font-size:32px; margin-bottom:8px;"><i class="bi bi-inbox text-muted"></i></div>
+                <div style="font-size:14px; font-weight:500;">Henüz kayıtlı bir tahmin yok.</div>
+                <div style="font-size:12px; margin-top:4px;">Soldaki formu kullanarak ilk no-show tahminini oluşturun.</div>
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
 
-      <div style="padding:14px 24px; border-top:1px solid var(--border); 
+      <div style="padding:14px 24px; border-top:1px solid var(--border);
                   font-size:12px; color:var(--text-muted);">
         <i class="bi bi-info-circle me-1"></i>
-        Bu liste simülasyon verilerini içermektedir. Üretimde veritabanından gerçek hasta verileri çekilecektir.
+        Bu liste, bu sistem üzerinden gerçekten çalıştırılan model tahminlerinden oluşur ve kalıcı olarak saklanır.
       </div>
     </div>
 
