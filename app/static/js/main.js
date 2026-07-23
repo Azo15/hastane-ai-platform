@@ -5,6 +5,12 @@
 
 "use strict";
 
+// ─── CSRF Token ────────────────────────────────────────────────────────────
+// base.html <head> içindeki <meta name="csrf-token"> etiketinden okunur.
+// Flask-WTF, GET dışındaki tüm isteklerde bu header'ı zorunlu kılar.
+const CSRF_TOKEN =
+  document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
 // ─── Global Sohbet Geçmişi ────────────────────────────────────────────────
 window.currentConversationId = null;
 let conversationHistory = [];
@@ -321,7 +327,10 @@ async function showTicketDetails(ticketId) {
       actionBtn.disabled = true;
       actionBtn.textContent = "Kapatılıyor...";
       try {
-        const resp = await fetch(`/chatbot/ticket/${ticket.id}/close`, { method: "POST" });
+        const resp = await fetch(`/chatbot/ticket/${ticket.id}/close`, {
+          method: "POST",
+          headers: { "X-CSRFToken": CSRF_TOKEN },
+        });
         const resData = await resp.json();
         if (resData.success) {
           statusBadge.textContent = "✅ Çözüldü / Kapatıldı";
@@ -494,7 +503,7 @@ async function sendMessage() {
   try {
     const response = await fetch("/chatbot/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
       body: JSON.stringify({
         message: text,
         history: conversationHistory.slice(-10), // Son 10 mesaj bağlamı
@@ -563,7 +572,7 @@ async function openTicket() {
   try {
     const response = await fetch("/chatbot/create-ticket", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
       body: JSON.stringify({
         description: description,
         user_message: lastUserMsg,
@@ -648,7 +657,7 @@ async function closeTicket(ticketId) {
   try {
     const response = await fetch(`/chatbot/ticket/${ticketId}/close`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
     });
 
     const data = await response.json();
@@ -845,7 +854,7 @@ async function autoSaveConversation() {
   try {
     const response = await fetch("/chatbot/conversation/save", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
       body: JSON.stringify({
         conversation_id: window.currentConversationId,
         messages: conversationHistory
@@ -937,7 +946,8 @@ async function deleteConversation(id, event) {
 
   try {
     const resp = await fetch(`/chatbot/conversation/${id}/delete`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: { "X-CSRFToken": CSRF_TOKEN },
     });
     const data = await resp.json();
     if (data.success) {
@@ -1060,7 +1070,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const response = await fetch("/no-show/predict", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
           body: JSON.stringify(data)
         });
 
