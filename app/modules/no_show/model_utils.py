@@ -24,16 +24,32 @@ MODEL_PATH = os.path.join(BASE_DIR, "models", "lightgbm_model.pkl")
 # Global model referansı (tek seferinde yüklenir)
 _model = None
 
+# Modelin ölçülmüş doğruluk oranı (0-1). Sadece gerçekten hesaplandığında
+# doldurulur — dashboard'da rastgele/sabit bir "AI doğruluğu" sayısı
+# göstermemek için None başlatılır.
+_model_accuracy = None
+
+
+def get_model_accuracy():
+    """Modelin held-out test seti üzerindeki ölçülmüş doğruluğunu döndürür.
+
+    Gerçek (harici) bir model dosyası yüklendiyse doğruluk bilinmediğinden
+    None döner — arayüz bunu sabit bir sayı uydurmak yerine "Ölçülmedi"
+    olarak göstermelidir.
+    """
+    return _model_accuracy
+
 
 def _build_fallback_model():
     """
     Gerçek model dosyası yoksa gerçekçi bir yedek LightGBM modeli oluşturur.
     Bu fonksiyon yalnızca geliştirme/demo ortamı içindir.
     """
+    global _model_accuracy
     try:
         import lightgbm as lgb
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
+        from sklearn.model_selection import train_test_split
+        from sklearn.metrics import accuracy_score
 
         logger.warning("Gerçek model bulunamadı — yedek demo modeli oluşturuluyor.")
 
@@ -71,6 +87,10 @@ def _build_fallback_model():
         noshow_prob = np.clip(noshow_prob, 0, 1)
         y = (noshow_prob > 0.25).astype(int)
 
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+
         # LightGBM modelini eğit
         model = lgb.LGBMClassifier(
             n_estimators=100,
@@ -80,7 +100,11 @@ def _build_fallback_model():
             random_state=42,
             verbose=-1,
         )
-        model.fit(X, y)
+        model.fit(X_train, y_train)
+
+        # Held-out test seti üzerinde gerçek doğruluk ölçümü
+        _model_accuracy = accuracy_score(y_test, model.predict(X_test))
+        logger.info(f"Yedek model test doğruluğu: {_model_accuracy:.3f}")
 
         # Modeli kaydet
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)

@@ -6,13 +6,19 @@ Blueprintleri ve uzantıları kayıt eder.
 import os
 from flask import Flask
 from dotenv import load_dotenv
+from flask_wtf import CSRFProtect
 from .database import db, init_db
 
 load_dotenv()
 
+csrf = CSRFProtect()
 
-def create_app():
-    """Flask uygulama fabrikası — tüm Blueprint ve uzantıları başlatır."""
+
+def create_app(test_config: dict | None = None):
+    """Flask uygulama fabrikası — tüm Blueprint ve uzantıları başlatır.
+
+    test_config verilirse (pytest için) varsayılan ayarların üzerine yazılır.
+    """
     app = Flask(__name__)
 
     # Uygulama konfigürasyonu
@@ -22,8 +28,13 @@ def create_app():
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    if test_config:
+        app.config.update(test_config)
+
     # SQLAlchemy'yi uygulamaya bağla
     db.init_app(app)
+    # CSRF koruması — tüm POST/PUT/DELETE istekleri için token zorunlu kılar
+    csrf.init_app(app)
 
     # Blueprint'leri kayıt et
     from .modules.no_show import no_show_bp
