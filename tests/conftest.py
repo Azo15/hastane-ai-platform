@@ -26,6 +26,10 @@ def app():
 
     yield application
 
+    with application.app_context():
+        db.session.remove()
+        db.engine.dispose()
+
     os.close(db_fd)
     os.unlink(db_path)
 
