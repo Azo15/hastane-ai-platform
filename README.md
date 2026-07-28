@@ -82,10 +82,6 @@ cd Staj2
 python -m venv venv
 venv\Scripts\activate
 
-# macOS / Linux
-python3 -m venv venv
-source venv/bin/activate
-```
 
 ### 3. Gerekli Kütüphaneleri Yükleyin
 ```bash
