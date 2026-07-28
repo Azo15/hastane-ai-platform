@@ -78,10 +78,9 @@ cd Staj2
 
 ### 2. Sanal Ortam (Virtual Environment) Oluşturun ve Aktif Edin
 ```bash
-# Windows
+
 python -m venv venv
 venv\Scripts\activate
-
 
 ### 3. Gerekli Kütüphaneleri Yükleyin
 ```bash
