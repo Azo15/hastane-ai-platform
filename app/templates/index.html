@@ -266,6 +266,76 @@
 
 </div>
 
+<!-- Son 5 Destek Talebi Tablosu -->
+<div class="row mt-4 g-4">
+  <div class="col-12 animate-in">
+    <div class="card-modern">
+      <div class="card-header-modern" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="card-title-modern" style="display:flex; align-items:center;">
+          <i class="bi bi-clock-history text-primary fs-5 me-2"></i>
+          Son 5 Destek Talebi (Son Biletler)
+        </span>
+        <a href="{{ url_for('chatbot.index') }}" style="font-size:12px; font-weight:600; text-decoration:none; color:var(--primary);">
+          Tümünü Gör <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      <div class="card-body-modern p-0" style="overflow: hidden;">
+        <div class="table-responsive">
+          <table class="table-modern mb-0" style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border); background:rgba(0,0,0,0.015); text-align:left;">
+                <th style="padding:14px 20px; font-weight: 600; color: var(--text-main);">Bilet ID</th>
+                <th style="padding:14px 20px; font-weight: 600; color: var(--text-main);">Sorun Açıklaması</th>
+                <th style="padding:14px 20px; font-weight: 600; color: var(--text-main);">Oluşturulma Tarihi</th>
+                <th style="padding:14px 20px; font-weight: 600; color: var(--text-main);">Kullanıcı</th>
+                <th style="padding:14px 20px; font-weight: 600; color: var(--text-main);">Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if recent_tickets %}
+                {% for ticket in recent_tickets %}
+                <tr style="border-bottom:1px solid var(--border); transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.008)'" onmouseout="this.style.background='transparent'">
+                  <td style="padding:14px 20px;">
+                    <span class="fw-bold text-primary">#{{ ticket.id }}</span>
+                  </td>
+                  <td style="padding:14px 20px;">
+                    <div style="font-weight:500; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);">
+                      {{ ticket.problem_description }}
+                    </div>
+                  </td>
+                  <td style="padding:14px 20px; color:var(--text-secondary);">
+                    {{ ticket.date_created.strftime('%d.%m.%Y %H:%M') }}
+                  </td>
+                  <td style="padding:14px 20px; color:var(--text-secondary); font-weight: 500;">
+                    {{ ticket.created_by }}
+                  </td>
+                  <td style="padding:14px 20px;">
+                    <span class="ticket-status-badge ticket-status-{{ 'open' if ticket.status == 'Açık' else 'closed' }}" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 8px; border-radius:100px;">
+                      {% if ticket.status == 'Açık' %}
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                      {% else %}
+                        <i class="bi bi-check-circle-fill"></i>
+                      {% endif %}
+                      {{ ticket.status }}
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="bi bi-inbox fs-4 me-2"></i> Aktif kayıt bulunmuyor.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Alt bilgi -->
 <div class="text-center mt-5 animate-in" style="color: var(--text-muted); font-size: 12px;">
   <i class="bi bi-shield-check me-1" style="color: var(--primary);"></i>
