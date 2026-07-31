@@ -75,8 +75,22 @@
           <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
         </div>
         <div class="stat-card-content">
-          <div class="stat-card-value" style="color:#f59e0b;">%{{ stats.no_show_rate }}</div>
-          <div class="stat-card-label">No-Show Oranı</div>
+          <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:8px;">
+            <div class="stat-card-value" style="color:#f59e0b; margin-bottom: 0;">%{{ stats.no_show_rate }}</div>
+            <!-- Mini SVG Sparkline -->
+            <svg width="55" height="24" viewBox="0 0 60 25" style="overflow:visible; opacity: 0.85;">
+              <defs>
+                <linearGradient id="sparkline-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M 0 18 C 10 12, 15 22, 25 8 C 35 15, 45 4, 60 6" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M 0 18 C 10 12, 15 22, 25 8 C 35 15, 45 4, 60 6 L 60 25 L 0 25 Z" fill="url(#sparkline-grad)"></path>
+              <circle cx="60" cy="6" r="3" fill="#f59e0b"></circle>
+            </svg>
+          </div>
+          <div class="stat-card-label" style="margin-top: 4px;">No-Show Oranı</div>
           <div class="stat-card-delta" style="color:var(--text-muted);">
             <i class="bi bi-database"></i> Kayıtlı tahminler içinde
           </div>
