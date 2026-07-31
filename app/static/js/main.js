@@ -744,12 +744,25 @@ function renderPredictionResult(res) {
   const predictionText = res.prediction === 1 ? "gelmeme" : "gelme";
 
   let suggestion = "";
+  let actionButton = "";
   if (res.risk_color === "success") {
     suggestion = "Standart randevu sürecine devam edilebilir. Ek müdahale gerekmemektedir.";
   } else if (res.risk_color === "warning") {
     suggestion = "SMS hatırlatması yapılması ve randevu günü tekrar aranması önerilir.";
+    actionButton = `
+      <div class="mt-2 text-end">
+        <button class="btn btn-sm btn-warning text-dark border-0" onclick="showToast('🔔 Otomatik SMS hatırlatıcısı sıraya alındı!', 'success')" style="font-size:11px; font-weight:600; border-radius:6px; padding: 4px 10px;">
+          <i class="bi bi-envelope-fill me-1"></i> SMS Gönder
+        </button>
+      </div>`;
   } else {
     suggestion = "Randevu günü sabahı hasta aranmalı, alternatif slot planlanmalı ve randevu hatırlatma katmanı artırılmalıdır.";
+    actionButton = `
+      <div class="mt-2 text-end">
+        <button class="btn btn-sm btn-danger border-0" onclick="showToast('📞 Telefon arama talebi poliklinik sekreterlik ekranına yönlendirildi!', 'success')" style="font-size:11px; font-weight:600; border-radius:6px; padding: 4px 10px;">
+          <i class="bi bi-telephone-fill me-1"></i> Arama Planla
+        </button>
+      </div>`;
   }
 
   container.innerHTML = `
@@ -776,9 +789,10 @@ function renderPredictionResult(res) {
             <div class="risk-bar ${res.risk_color}" style="width: ${res.risk_score}%; transition: width 0.8s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
           </div>
 
-          <!-- Öneri -->
+          <!-- Öneri ve Hızlı Aksiyon -->
           <div class="mt-3 p-3 rounded-3" style="background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); font-size: 13px;">
-            <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> ${suggestion}
+            <div><i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>Öneri:</strong> ${suggestion}</div>
+            ${actionButton}
           </div>
         </div>
       </div>
