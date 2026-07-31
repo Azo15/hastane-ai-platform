@@ -98,6 +98,31 @@
       <span class="topbar-title">{% block page_title %}Kontrol Paneli{% endblock %}</span>
       <span class="topbar-breadcrumb">{% block breadcrumb %}Hastane AI Platformu / Ana Sayfa{% endblock %}</span>
     </div>
+    
+    <!-- Global Hızlı Arama Kutusu -->
+    <div class="topbar-center" style="flex: 1; max-width: 320px; margin: 0 auto 0 40px; position: relative; display: none;">
+      <form action="{{ url_for('chatbot.index') }}" method="GET" style="margin: 0; width: 100%;">
+        <div style="position: relative; width: 100%;">
+          <i class="bi bi-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+          <input type="text" name="q" placeholder="Biletlerde ara... (ID veya sorun yazın)" 
+                 style="width: 100%; padding: 8px 16px 8px 38px; border-radius: 100px; border: 1px solid var(--border); background: var(--bg-main); font-size: 12px; outline: none; transition: all 0.2s;"
+                 onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(15,108,243,0.08)';"
+                 onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';"
+                 value="{{ request.args.get('q', '') }}">
+        </div>
+      </form>
+    </div>
+    
+    <!-- JavaScript ile sadece giriş yapıldığında arama kutusunu gösterelim (login ekranında görünmesin) -->
+    {% if session.get('logged_in') %}
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const searchBox = document.querySelector(".topbar-center");
+        if (searchBox) searchBox.style.display = "block";
+      });
+    </script>
+    {% endif %}
+
     <div class="topbar-right">
       <!-- Canlı saat -->
       <div class="topbar-time" title="Güncel Saat">
