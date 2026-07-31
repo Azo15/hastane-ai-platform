@@ -51,34 +51,38 @@
 
   <!-- Yüksek Riskli -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
-    <div class="stat-card" style="--stat-color: #ef4444;">
-      <div class="stat-card-icon" style="background:#fee2e2;">
-        <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
-      </div>
-      <div class="stat-card-content">
-        <div class="stat-card-value" style="color:#ef4444;">{{ stats.high_risk_count }}</div>
-        <div class="stat-card-label">Yüksek Risk (&gt;70%)</div>
-        <div class="stat-card-delta" style="color:var(--text-muted);">
-          <i class="bi bi-database"></i> Kayıtlı tahminler içinde
+    <a href="{{ url_for('no_show.index') }}" style="text-decoration: none; color: inherit;">
+      <div class="stat-card" style="--stat-color: #ef4444; cursor: pointer;">
+        <div class="stat-card-icon" style="background:#fee2e2;">
+          <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+        </div>
+        <div class="stat-card-content">
+          <div class="stat-card-value" style="color:#ef4444;">{{ stats.high_risk_count }}</div>
+          <div class="stat-card-label">Yüksek Risk (&gt;70%)</div>
+          <div class="stat-card-delta" style="color:var(--text-muted);">
+            <i class="bi bi-database"></i> Kayıtlı tahminler içinde
+          </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
 
   <!-- No-Show Oranı -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
-    <div class="stat-card" style="--stat-color: #f59e0b;">
-      <div class="stat-card-icon" style="background:#fef9c3;">
-        <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
-      </div>
-      <div class="stat-card-content">
-        <div class="stat-card-value" style="color:#f59e0b;">%{{ stats.no_show_rate }}</div>
-        <div class="stat-card-label">No-Show Oranı</div>
-        <div class="stat-card-delta" style="color:var(--text-muted);">
-          <i class="bi bi-database"></i> Kayıtlı tahminler içinde
+    <a href="{{ url_for('no_show.index') }}" style="text-decoration: none; color: inherit;">
+      <div class="stat-card" style="--stat-color: #f59e0b; cursor: pointer;">
+        <div class="stat-card-icon" style="background:#fef9c3;">
+          <i class="bi bi-graph-up-arrow text-warning fs-4"></i>
+        </div>
+        <div class="stat-card-content">
+          <div class="stat-card-value" style="color:#f59e0b;">%{{ stats.no_show_rate }}</div>
+          <div class="stat-card-label">No-Show Oranı</div>
+          <div class="stat-card-delta" style="color:var(--text-muted);">
+            <i class="bi bi-database"></i> Kayıtlı tahminler içinde
+          </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
 
   <!-- AI Doğruluk -->
@@ -105,34 +109,38 @@
 
   <!-- Açık Ticket -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
-    <div class="stat-card" style="--stat-color: #ef4444;">
-      <div class="stat-card-icon" style="background:#fee2e2;">
-        <i class="bi bi-ticket-perforated text-danger fs-4"></i>
-      </div>
-      <div class="stat-card-content">
-        <div class="stat-card-value" style="color:#ef4444;">{{ stats.open_tickets }}</div>
-        <div class="stat-card-label">Açık IT Ticket</div>
-        <div class="stat-card-delta" style="color:#f59e0b;">
-          <i class="bi bi-clock"></i> Ortalama yanıt: 23dk
+    <a href="{{ url_for('chatbot.index', status='Açık') }}" style="text-decoration: none; color: inherit;">
+      <div class="stat-card" style="--stat-color: #ef4444; cursor: pointer;">
+        <div class="stat-card-icon" style="background:#fee2e2;">
+          <i class="bi bi-ticket-perforated text-danger fs-4"></i>
+        </div>
+        <div class="stat-card-content">
+          <div class="stat-card-value" style="color:#ef4444;">{{ stats.open_tickets }}</div>
+          <div class="stat-card-label">Açık IT Ticket</div>
+          <div class="stat-card-delta" style="color:#f59e0b;">
+            <i class="bi bi-clock"></i> Ortalama yanıt: 23dk
+          </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
 
   <!-- Çözülen Ticket -->
   <div class="col-xl-2 col-lg-4 col-md-6 animate-in">
-    <div class="stat-card" style="--stat-color: #22c55e;">
-      <div class="stat-card-icon" style="background:#dcfce7;">
-        <i class="bi bi-patch-check text-success fs-4"></i>
-      </div>
-      <div class="stat-card-content">
-        <div class="stat-card-value" style="color:#22c55e;">{{ stats.resolved_tickets }}</div>
-        <div class="stat-card-label">Çözülen Ticket</div>
-        <div class="stat-card-delta" style="color:#22c55e;">
-          <i class="bi bi-arrow-up"></i> Bu ay
+    <a href="{{ url_for('chatbot.index', status='Çözüldü') }}" style="text-decoration: none; color: inherit;">
+      <div class="stat-card" style="--stat-color: #22c55e; cursor: pointer;">
+        <div class="stat-card-icon" style="background:#dcfce7;">
+          <i class="bi bi-patch-check text-success fs-4"></i>
+        </div>
+        <div class="stat-card-content">
+          <div class="stat-card-value" style="color:#22c55e;">{{ stats.resolved_tickets }}</div>
+          <div class="stat-card-label">Çözülen Ticket</div>
+          <div class="stat-card-delta" style="color:#22c55e;">
+            <i class="bi bi-arrow-up"></i> Bu ay
+          </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
 
 </div>
