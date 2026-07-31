@@ -102,8 +102,16 @@ def index():
     username = session.get("username", "admin")
     role = session.get("user_role_code", "admin")
 
+    # SQLite veritabanından rol bazlı sayıları çekelim
+    recent_tickets = []
     try:
-        tickets = get_visible_tickets_query(role, username).all()
+        if role == "admin":
+            tickets = Ticket.query.all()
+            recent_tickets = Ticket.query.order_by(Ticket.date_created.desc()).limit(5).all()
+        else:
+            tickets = Ticket.query.filter_by(created_by=username).all()
+            recent_tickets = Ticket.query.filter_by(created_by=username).order_by(Ticket.date_created.desc()).limit(5).all()
+            
         open_t = sum(1 for t in tickets if t.status == "Açık")
         resolved_t = sum(1 for t in tickets if t.status == "Çözüldü")
     except Exception:
@@ -126,7 +134,7 @@ def index():
         "no_show_rate": no_show_rate,
         "ai_accuracy": round(model_accuracy * 100, 1) if model_accuracy is not None else None,
     }
-    return render_template("index.html", stats=stats)
+    return render_template("index.html", stats=stats, recent_tickets=recent_tickets)
 
 
 @main_bp.route("/settings", methods=["GET", "POST"])
