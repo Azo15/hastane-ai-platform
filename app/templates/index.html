@@ -280,10 +280,11 @@
 
 </div>
 
-<!-- Son 5 Destek Talebi Tablosu -->
+<!-- Son 5 Destek Talebi Tablosu ve Hızlı Bilet Aç Widget'ı -->
 <div class="row mt-4 g-4">
-  <div class="col-12 animate-in">
-    <div class="card-modern">
+  <!-- Sol Kolon: Son 5 Bilet (Genel Tablo) -->
+  <div class="col-lg-8 animate-in">
+    <div class="card-modern h-100">
       <div class="card-header-modern" style="display:flex; justify-content:space-between; align-items:center;">
         <span class="card-title-modern" style="display:flex; align-items:center;">
           <i class="bi bi-clock-history text-primary fs-5 me-2"></i>
@@ -313,7 +314,7 @@
                     <span class="fw-bold text-primary">#{{ ticket.id }}</span>
                   </td>
                   <td style="padding:14px 20px;">
-                    <div style="font-weight:500; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);">
+                    <div style="font-weight:500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);">
                       {{ ticket.problem_description }}
                     </div>
                   </td>
@@ -348,7 +349,92 @@
       </div>
     </div>
   </div>
+
+  <!-- Sağ Kolon: Hızlı Bilet Aç Widget'ı -->
+  <div class="col-lg-4 animate-in">
+    <div class="card-modern h-100">
+      <div class="card-header-modern">
+        <span class="card-title-modern" style="display:flex; align-items:center;">
+          <i class="bi bi-lightning-fill text-warning fs-5 me-2"></i>
+          Hızlı Bilet Oluştur
+        </span>
+      </div>
+      <div class="card-body-modern">
+        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px;">
+          Sohbet etmeye zamanınız yoksa, teknik arızayı kısaca buraya yazarak anında yeni bir destek talebi (bilet) açabilirsiniz.
+        </p>
+        
+        <form id="quick-ticket-form" style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label for="quick-description" style="font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px; display:block;">
+              Sorun Açıklaması
+            </label>
+            <input type="text" id="quick-description" required 
+                   placeholder="Örn: 2. Kat poliklinik barkod yazıcı kağıt sıkışması"
+                   style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-main); font-size: 13px; outline: none; transition: border-color 0.2s;"
+                   onfocus="this.style.borderColor='var(--primary)';"
+                   onblur="this.style.borderColor='var(--border)';">
+          </div>
+          
+          <button type="submit" id="quick-submit-btn" class="btn-primary-modern" style="justify-content:center; padding:10px; width:100%; border:none; margin-top:8px;">
+            <i class="bi bi-plus-circle-fill"></i> Talebi Gönder
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- AJAX ile Hızlı Bilet Gönderme Scripti -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const quickForm = document.getElementById("quick-ticket-form");
+  if (quickForm) {
+    quickForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const descInput = document.getElementById("quick-description");
+      const submitBtn = document.getElementById("quick-submit-btn");
+      
+      if (!descInput || !descInput.value.trim()) return;
+      
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Oluşturuluyor...';
+      
+      try {
+        const response = await fetch("/chatbot/create-ticket", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": typeof CSRF_TOKEN !== "undefined" ? CSRF_TOKEN : ""
+          },
+          body: JSON.stringify({
+            description: descInput.value.trim(),
+            user_message: "Gösterge paneli hızlı widget üzerinden açıldı."
+          })
+        });
+        
+        const res = await response.json();
+        if (response.ok && res.success) {
+          showToast(res.message || "Destek talebi başarıyla açıldı.", "success");
+          setTimeout(() => {
+            location.reload();
+          }, 800);
+        } else {
+          showToast(res.error || "Bilet oluşturulamadı.", "error");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Sunucuyla bağlantı kurulamadı.", "error");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    });
+  }
+});
+</script>
 
 <!-- Alt bilgi -->
 <div class="text-center mt-5 animate-in" style="color: var(--text-muted); font-size: 12px;">
