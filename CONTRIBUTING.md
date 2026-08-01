@@ -50,7 +50,6 @@ Please follow standard conventional commit rules:
 - LightGBM (No-Show Appointment Prediction Engine)
 - Anthropic Claude API (IT Support Chatbot & Automation)
 - CSRF Protection enabled for all AJAX endpoints.
-- Ensure proper cleanup and session handling in database fixtures.
 
 ---
 
