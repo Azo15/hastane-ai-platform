@@ -765,6 +765,79 @@ function renderPredictionResult(res) {
       </div>`;
   }
 
+  
+// ─── Yeni Tahmini Tabloya Dinamik Ekleme (AJAX) ───────────────────────────
+function addAppointmentToTable(apt) {
+  if (!apt) return;
+  const tbody = document.getElementById("recent-appointments-body");
+  const countBadge = document.getElementById("recent-appointments-count");
+  if (!tbody) return;
+
+  // Henüz kayıt yoksa gösterilen boş satırı kaldır
+  const emptyRow = tbody.querySelector("tr.empty-row, tr td[colspan='8']");
+  if (emptyRow) {
+    const parentRow = emptyRow.closest("tr");
+    if (parentRow) parentRow.remove();
+  }
+
+  const tr = document.createElement("tr");
+  tr.style.animation = "slideInRight 0.3s ease";
+
+  let riskPill = "";
+  if (apt.risk_score >= 80) {
+    riskPill = `<span class="risk-score-pill" style="background:#fee2e2; color:#b91c1c; display:inline-flex; align-items:center; gap:4px;"><i class="bi bi-exclamation-circle-fill"></i> %${apt.risk_score}</span>`;
+  } else if (apt.risk_score >= 70) {
+    riskPill = `<span class="risk-score-pill" style="background:#fff3cd; color:#92400e; display:inline-flex; align-items:center; gap:4px;"><i class="bi bi-exclamation-circle-fill"></i> %${apt.risk_score}</span>`;
+  } else {
+    riskPill = `<span class="risk-score-pill" style="background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; gap:4px;">%${apt.risk_score}</span>`;
+  }
+
+  const smsText = apt.sms_received
+    ? `<span class="text-success fw-medium" style="font-size:13px; display:inline-flex; align-items:center; gap:4px;"><i class="bi bi-check-circle-fill"></i> Gönderildi</span>`
+    : `<span class="text-danger fw-medium" style="font-size:13px; display:inline-flex; align-items:center; gap:4px;"><i class="bi bi-x-circle-fill"></i> Gönderilmedi</span>`;
+
+  const dateParts = (apt.date_created || "").split(" ");
+  const dateStr = dateParts[0] || "";
+  const timeStr = dateParts[1] || "";
+
+  const initial = (apt.patient_name || "İ")[0].toUpperCase();
+  const randomColor = `hsl(${Math.floor(Math.random() * 360)}, 65%, 50%)`;
+
+  tr.innerHTML = `
+    <td><code style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px;">#${apt.id}</code></td>
+    <td>
+      <div class="patient-name-cell">
+        <div class="patient-avatar" style="background: ${randomColor};">${initial}</div>
+        <span class="fw-semibold" style="font-size:13px;">${escapeHtml(apt.patient_name)}</span>
+      </div>
+    </td>
+    <td>${apt.age}</td>
+    <td>
+      <div style="font-size:13px; font-weight:600;">${dateStr}</div>
+      <div style="font-size:11px; color:var(--text-muted);">${timeStr}</div>
+    </td>
+    <td>
+      <span style="font-size:12px; background:#f0f4f8; padding:3px 8px; border-radius:6px; font-weight:500;">
+        ${escapeHtml(apt.poliklinik || "—")}
+      </span>
+    </td>
+    <td>${riskPill}</td>
+    <td>
+      <span class="fw-bold" style="color:${apt.previous_noshow >= 3 ? '#ef4444' : '#f59e0b'};">
+        ${apt.previous_noshow}x
+      </span>
+    </td>
+    <td>${smsText}</td>
+  `;
+
+  tbody.insertBefore(tr, tbody.firstChild);
+
+  if (countBadge) {
+    const current = tbody.querySelectorAll("tr").length;
+    countBadge.textContent = `${current} Kayıt`;
+  }
+}
+
   container.innerHTML = `
     <div class="prediction-result-card ${res.risk_color} mb-4 animate-in" id="prediction-result" style="animation: slideInRight 0.3s ease;">
       <div class="d-flex align-items-center gap-4 flex-wrap">
@@ -1092,7 +1165,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (res && res.risk_score !== undefined) {
           renderPredictionResult(res);
-          showToast("No-Show risk olasılığı hesaplandı.", "success");
+          if (res.appointment) {
+            addAppointmentToTable(res.appointment);
+          }
+          showToast("No-Show risk olasılığı hesaplandı ve geçmişe eklendi.", "success");
         } else {
           showToast("Tahmin hesaplanırken hata oluştu.", "error");
         }
