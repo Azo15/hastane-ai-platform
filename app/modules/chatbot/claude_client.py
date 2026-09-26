@@ -24,19 +24,16 @@ TICKET_MARKER = "[##TICKET_GEREKLI##]"
 
 # ─── IT Destek Asistanı Sistem Promptu (Yedek) ───────────────────────────────
 DEFAULT_SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
-Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) sorunlarına teknik çözüm üretirsin.
-Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver."""
-
-TICKET_INSTRUCTION = """
+Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) sorunlarına tTICKET_INSTRUCTION = """
 
 ==== TICKET KURALI (ÇOK ÖNEMLİ) ====
-Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini SADECE şu durumlarda ekle:
-1. Sorunu KESINLIKLE uzaktan çözemiyorsan (donanım arızası, fiziksel müdahale, kablo değişikliği, teknik ekibin gitmesi vb.)
-2. Kullanıcı "ticket aç", "talep oluştur", "ekip çağır", "ekip yola çıksın", "ekip yönlendir" gibi bir istekte bulunuyorsa.
-
-Selamlama, basit soru, yönlendirme, tavsiye, adım adım rehberlik gibi NORMAL yanıtlarda bu işareti KESİNLİKLE KULLANMA.
-Yanıtın sonundaki bu işaret kullanıcıya gösterilmez; sistem otomatik ticket açar.
-======================================"""
+1. Kullanıcı bir sorun bildirdiğinde ÖNCE sorunu çözmeye yönelik adım adım kontrol önerileri sun. İlk yanıtında KESİNLİKLE bilet açma ve yanıtının sonuna "[##TICKET_GEREKLI##]" ekleme.
+2. Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini SADECE şu durumlarda ekle:
+   - Kullanıcı verdiğin kontrol adımlarını denediğini ama sorunun çözülmediğini söylediğinde (örn: "denedim olmadı", "hala çalışmıyor", "adımları yaptım ama gelmedi").
+   - Kullanıcı doğrudan bilet/ekip talep ettiğinde (örn: "ticket aç", "ekip çağır", "destek talebi oluştur").
+   - Donanım fiziksel olarak kesin arızalandığında (örn: "kablo koptu", "ekran kırıldı", "yazıcıdan duman çıktı").
+3. Eğer "[##TICKET_GEREKLI##]" işaretini ekliyorsan, yanıtında "Bu durum için otomatik olarak bir teknik destek talebi (ticket) oluşturdum, teknik ekibimiz en kısa sürede yönlendirilecektir." bilgisini ver.
+======================================="""
 
 def get_dynamic_prompt() -> str:
     """Settings.json dosyasından dinamik prompt okur, sonuna ticket kuralını ekler."""
@@ -50,10 +47,6 @@ def get_dynamic_prompt() -> str:
                 base_prompt = data.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
     except Exception as e:
         logger.warning(f"Dinamik prompt okunamadi: {e}")
-        
-    # Eğer prompt içinde ticket kuralı yoksa otomatik ekle
-    if "TICKET_GEREKLI" not in base_prompt and "TICKET KURALI" not in base_prompt:
-        base_prompt += TICKET_INSTRUCTION
         
     return base_prompt
 
@@ -89,20 +82,10 @@ def _get_provider():
 def should_create_ticket(response_text: str) -> bool:
     """Yanıtta ticket açılması gerektiğini gösteren gizli marker var mı kontrol eder.
 
-    Sistem promptu modele marker eklemesini KESIN olarak emrettiği için asıl
-    tetikleyici budur. Buradaki kısa liste yalnızca modelin markeri unuttuğu
-    nadir durumlar için bir yedektir — önceki sürümdeki geniş "kelime + kelime"
-    kombinasyonları (örn. "ekip" + "gel") normal, biletle ilgisiz cevaplarda bile
-    yanlışlıkla eşleşip gereksiz ticket açabiliyordu, bu yüzden kaldırıldı.
+    Sistem promptu modele marker eklemesini KESIN olarak emrettiği için tek
+    yetkili tetikleyici bu marker'dır.
     """
-    if TICKET_MARKER in response_text:
-        return True
-
-    clean_text = response_text.lower()
-
-    fallback_phrases = [
-        "destek talebi aç",
-        "arıza kaydı oluştur",
+    return TICKET_MARKER in response_text�tur",
         "bilet oluştur",
         "bilet aç",
         "fiziksel müdahale gerek",
