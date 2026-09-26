@@ -5,10 +5,9 @@ AI Chatbot istemci yönetimi.
 Önce ANTHROPIC_API_KEY dener, yoksa GROQ_API_KEY ile Groq/Llama'ya geçer.
 
 Ticket tetikleme mantığı:
-- AI yanıtına gizli marker [##TICKET_GEREKLI##] eklemesi istenir
-- SADECE gerçekten çözülemez durumlarda bu marker kullanılır
-- Marker kullanıcıya gösterilmez, arka planda ticket açılır
-- Kullanıcı kendi "Destek Talebi Aç" butonuyla da açabilir
+- AI yanıtına gizli marker [##TICKET_GEREKLI##] eklemesi istenir.
+- SADECE AI sorunu uzaktan çözemediğinde veya kullanıcı talep ettiğinde marker kullanılır.
+- Marker kullanıcıya gösterilmez, arka planda ticket açılır.
 """
 
 from __future__ import annotations
@@ -19,24 +18,29 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Gizli marker — AI yanıtının sonuna sadece gerekliyse eklenir
+# Gizli marker — AI yanıtının sonuna sadece ticket gerekiyorsa eklenir
 TICKET_MARKER = "[##TICKET_GEREKLI##]"
 
-# ─── IT Destek Asistanı Sistem Promptu (Yedek) ───────────────────────────────
+# ─── IT Destek Asistanı Sistem Promptu ───────────────────────────────────────
 DEFAULT_SYSTEM_PROMPT = """Sen bir hastane bilgi işlem (IT) destek asistanısın.
-Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) sorunlarına tTICKET_INSTRUCTION = """
+Hastane personelinin bilgisayar, yazıcı, internet, ağ ve HBYS (Hastane Bilgi Yönetim Sistemi) sorunlarına teknik çözüm üretirsin.
+Nazik, profesyonel, kısa ve çözüm odaklı ol. Yanıtlarını her zaman Türkçe ver.
 
-==== TICKET KURALI (ÇOK ÖNEMLİ) ====
-1. Kullanıcı bir sorun bildirdiğinde ÖNCE sorunu çözmeye yönelik adım adım kontrol önerileri sun. İlk yanıtında KESİNLİKLE bilet açma ve yanıtının sonuna "[##TICKET_GEREKLI##]" ekleme.
-2. Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini SADECE şu durumlarda ekle:
-   - Kullanıcı verdiğin kontrol adımlarını denediğini ama sorunun çözülmediğini söylediğinde (örn: "denedim olmadı", "hala çalışmıyor", "adımları yaptım ama gelmedi").
-   - Kullanıcı doğrudan bilet/ekip talep ettiğinde (örn: "ticket aç", "ekip çağır", "destek talebi oluştur").
-   - Donanım fiziksel olarak kesin arızalandığında (örn: "kablo koptu", "ekran kırıldı", "yazıcıdan duman çıktı").
-3. Eğer "[##TICKET_GEREKLI##]" işaretini ekliyorsan, yanıtında "Bu durum için otomatik olarak bir teknik destek talebi (ticket) oluşturdum, teknik ekibimiz en kısa sürede yönlendirilecektir." bilgisini ver.
-======================================="""
+==== ÖNEMLİ TICKET (DESTEK TALEBİ) KURALLARI ====
+1. Kullanıcı bir sorun bildirdiğinde İLK OLARAK adım adım pratik çözüm rehberi sun. İLK YANITINDA KESİNLİKLE "[##TICKET_GEREKLI##]" İŞARETİNİ EKLEME VE BİLET OLUŞTURULDU DEME.
+2. Çözüm sunduğun yanıtın sonunda kullanıcıyı nazikçe bilgilendir: "Lütfen bu adımları deneyin. Eğer sorununuz çözülmezse veya teknik ekip yönlendirilmesini isterseniz 'Çözülmedi' veya 'Ekip çağır' diyebilirsiniz."
+
+3. Yanıtının en sonuna "[##TICKET_GEREKLI##]" gizli işaretini SADECE ve SADECE şu durumlarda ekle:
+   a) Kullanıcı verdiğin adımları denediğini ve sorunun ÇÖZÜLMEDİĞİNİ söylediğinde (örneğin: "olmadı", "denedim yine çalışmıyor", "sorun devam ediyor", "çözülmedi").
+   b) Kullanıcı açıkça destek talebi/bilet/ekip istediğinde (örneğin: "ticket aç", "ekip çağır", "destek talebi oluştur", "teknisyen gönder").
+   c) Sorun uzaktan çözülemeyecek ağır fiziksel/donanımsal bir arıza olduğunda (örneğin: "kablo koptu", "ekran kırıldı", "cihaz yandı", "duman çıktı").
+
+4. Yanıtının sonuna "[##TICKET_GEREKLI##]" işaretini eklediğin zaman yanıt metninde kullanıcıya şöyle bilgi ver: "Talebiniz üzerine otomatik bir teknik destek talebi (ticket) oluşturdum, teknik ekibimiz en kısa sürede müdahale edecektir."
+================================================"""
+
 
 def get_dynamic_prompt() -> str:
-    """Settings.json dosyasından dinamik prompt okur, sonuna ticket kuralını ekler."""
+    """Settings.json dosyasından dinamik prompt okur, sistem kurallarını korur."""
     base_prompt = DEFAULT_SYSTEM_PROMPT
     try:
         root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -44,19 +48,19 @@ def get_dynamic_prompt() -> str:
         if os.path.exists(settings_path):
             with open(settings_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                base_prompt = data.get("system_prompt", DEFAULT_SYSTEM_PROMPT)
+                custom_prompt = data.get("system_prompt", "").strip()
+                if custom_prompt:
+                    base_prompt = custom_prompt
     except Exception as e:
         logger.warning(f"Dinamik prompt okunamadi: {e}")
+        
+    if "[##TICKET_GEREKLI##]" not in base_prompt:
+        base_prompt = base_prompt + "\n\n" + DEFAULT_SYSTEM_PROMPT
         
     return base_prompt
 
 
 def _get_provider():
-    """
-    Mevcut API anahtarına göre uygun sağlayıcıyı döndürür.
-    Öncelik: Anthropic > Groq
-    Returns: ('anthropic' | 'groq', client, model_name)
-    """
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
     groq_key = os.environ.get("GROQ_API_KEY", "")
 
@@ -80,20 +84,11 @@ def _get_provider():
 
 
 def should_create_ticket(response_text: str) -> bool:
-    """Yanıtta ticket açılması gerektiğini gösteren gizli marker var mı kontrol eder.
-
-    Sistem promptu modele marker eklemesini KESIN olarak emrettiği için tek
-    yetkili tetikleyici bu marker'dır.
     """
-    return TICKET_MARKER in response_text�tur",
-        "bilet oluştur",
-        "bilet aç",
-        "fiziksel müdahale gerek",
-        "teknisyen yönlendir",
-        "ekip yönlendir",
-    ]
-
-    return any(phrase in clean_text for phrase in fallback_phrases)
+    Yanıtta ticket açılması gerektiğini gösteren gizli marker var mı kontrol eder.
+    SADECE AI yanıtının sonunda [##TICKET_GEREKLI##] gizli markeri bulunduğunda ticket açılır.
+    """
+    return TICKET_MARKER in response_text
 
 
 def clean_response(response_text: str) -> str:
@@ -105,18 +100,6 @@ def chat_with_claude(
     user_message: str,
     conversation_history: Optional[list] = None,
 ) -> dict:
-    """
-    AI API'ye mesaj gönderir. Anthropic veya Groq kullanır.
-
-    Returns:
-        dict: {
-            "success": bool,
-            "response": str,       # Markersiz temiz yanıt
-            "should_create_ticket": bool,
-            "error": str | None,
-            "provider": str,
-        }
-    """
     provider, client, model = _get_provider()
 
     if client is None:
@@ -155,7 +138,7 @@ def chat_with_claude(
                 model=model,
                 messages=groq_messages,
                 max_tokens=1024,
-                temperature=0.5,
+                temperature=0.1,
             )
             raw_text = completion.choices[0].message.content
 
