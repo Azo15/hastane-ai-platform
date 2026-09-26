@@ -1,12 +1,11 @@
 """
 app/modules/no_show/routes.py — No-Show Tahmin Rotaları
 
-/no-show/          → Dashboard + gerçek tahmin geçmişinden yüksek riskli randevular
+/no-show/          → Dashboard + kaydedilmiş son tahminler
 /no-show/predict   → POST: Tekli randevu tahmin API'si (sonuç DB'ye kalıcı olarak kaydedilir)
 """
 
 import logging
-
 from flask import render_template, request, jsonify, session
 from . import no_show_bp
 from .model_utils import predict_no_show
@@ -17,15 +16,15 @@ logger = logging.getLogger(__name__)
 
 @no_show_bp.route("/", methods=["GET"])
 def dashboard():
-    """No-Show analiz dashboard'u — kayıtlı gerçek tahminlerden en yüksek riskli olanları listeler."""
-    top_appointments = (
-        Appointment.query.order_by(Appointment.risk_score.desc())
+    """No-Show analiz dashboard'u — kayıtlı gerçek tahminlerden en son yapılanları listeler."""
+    recent_appointments = (
+        Appointment.query.order_by(Appointment.date_created.desc(), Appointment.id.desc())
         .limit(10)
         .all()
     )
     return render_template(
         "no_show.html",
-        high_risk_appointments=top_appointments,
+        high_risk_appointments=recent_appointments,
         prediction_result=None,
     )
 
@@ -43,23 +42,30 @@ def predict():
         form_data = request.form.to_dict()
 
     result = predict_no_show(form_data)
-    _save_appointment(form_data, result)
+    saved_apt = _save_appointment(form_data, result)
 
     if request.is_json:
+        if saved_apt:
+            result["appointment"] = saved_apt.to_dict()
         return jsonify(result)
 
+    recent_appointments = (
+        Appointment.query.order_by(Appointment.date_created.desc(), Appointment.id.desc())
+        .limit(10)
+        .all()
+    )
     return render_template(
         "no_show.html",
-        high_risk_appointments=Appointment.query.order_by(Appointment.risk_score.desc()).limit(10).all(),
+        high_risk_appointments=recent_appointments,
         prediction_result=result,
         form_data=form_data,
     )
 
 
-def _save_appointment(form_data: dict, result: dict) -> None:
-    """Tahmin sonucunu Appointment tablosuna kaydeder (hatası tahmini engellemez)."""
+def _save_appointment(form_data: dict, result: dict):
+    """Tahmin sonucunu Appointment tablosuna kaydeder ve kaydedilen nesneyi döndürür."""
     if result.get("error"):
-        return
+        return None
     try:
         appointment = Appointment(
             patient_name=(form_data.get("patient_name") or "İsimsiz Hasta").strip() or "İsimsiz Hasta",
@@ -82,6 +88,8 @@ def _save_appointment(form_data: dict, result: dict) -> None:
         )
         db.session.add(appointment)
         db.session.commit()
+        return appointment
     except Exception as e:
         db.session.rollback()
         logger.error(f"Randevu tahmini kaydedilemedi: {e}")
+        return None
