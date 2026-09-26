@@ -79,7 +79,7 @@ def _get_provider():
         try:
             from groq import Groq
             client = Groq(api_key=groq_key)
-            return "groq", client, "llama-3.3-70b-versatile"
+            return "groq", client, "qwen/qwen3.8-27b"
         except Exception as e:
             logger.warning(f"Groq baslatılamadı: {e}")
 
